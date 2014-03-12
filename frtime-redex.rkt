@@ -11,7 +11,7 @@
   (p + - * / < >)
   ;; Values
   ((u v)
-   UNDEFINED true false n p (λ (x ...) e) SIGMA)
+   UNDEFINED true false n p (lambda (x ...) e) SIGMA)
   ;; Numbers
   (n number)
   ;; Expressions
@@ -23,8 +23,7 @@
   ;; Signal Types
   (s (lift p v ...)
      (delay SIMGA n SIGMA)
-     (dyn (λ (v) e) SGIMA SIGMA)
+     (dyn (lambda (v) e) SIGMA SIGMA)
      (fwd SIGMA)
      input
      const))
-
