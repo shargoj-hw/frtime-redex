@@ -76,70 +76,70 @@
    FrTime-Semantics
    #:domain (S I e)
    (--> (S I (in-hole E (p v ...)))
-	;; reduces to
-	(S I (in-hole E v_applied)) 
-	(side-condition (andmap (lambda (x) (not (redex-match? FrTime σ x)))
-				(term (v ...))))
-	(where v_applied (DELTA p v ...))
-	"primitive-application")
+        ;; reduces to
+        (S I (in-hole E v_applied)) 
+        (side-condition (andmap (lambda (x) (not (redex-match? FrTime σ x)))
+                                (term (v ...))))
+        (where v_applied (DELTA p v ...))
+        "primitive-application")
    (--> (S (i ...) (in-hole E (p v ...))) 
-	;; reduces to
-	(S_prime (σ i ...) (in-hole E σ))
-	(where (σ_arg ...) 
-	       ,(filter (lambda (x) (redex-match? FrTime σ x))
-			(term (v ...))))
-	(side-condition (not (empty? (term σ_args))))
-	(where S_prime 
-	       (reg σ 
-		    (σ_arg ...)
-		    (set-signal-in-store S σ (⊥ (lift p v ...) ()))))
-	"primitive-lift")
+        ;; reduces to
+        (S_prime (σ i ...) (in-hole E σ))
+        (where (σ_arg ...) 
+               ,(filter (lambda (x) (redex-match? FrTime σ x))
+                        (term (v ...))))
+        (side-condition (not (empty? (term σ_args))))
+        (where S_prime 
+               (reg σ 
+                    (σ_arg ...)
+                    (set-signal-in-store S σ (⊥ (lift p v ...) ()))))
+        "primitive-lift")
    (--> (S I (in-hole E ((lambda (x ..._n) e) v ..._n)))
-	;; reduces to
-	(S I (in-hole E (subst-n (x v) ... e)))
-	"beta-v")
+        ;; reduces to
+        (S I (in-hole E (subst-n (x v) ... e)))
+        "beta-v")
    (--> (S (i ...) (in-hole E (σ v ...)))
-	;; reduces to
-	((reg σ_1 (σ) S_prime)
-	 (σ_1 i ...)
-	 (in-hole E σ_2))
-	(where S_prime 
-	       (set-signal-in-store S_halfprime 
-				    σ_1 
-				    (⊥ 
-				     (dyn (lambda (x) (x v ...))
-					  σ 
-					  σ_2)
-				     ())))
-	(where S_halfprime 
-	       (set-signal-in-store S 
-				    σ_2 
-				    (⊥ (fwd ⊥) ())))
-	"beta-v-lift")
+        ;; reduces to
+        ((reg σ_1 (σ) S_prime)
+         (σ_1 i ...)
+         (in-hole E σ_2))
+        (where S_prime 
+               (set-signal-in-store S_halfprime 
+                                    σ_1 
+                                    (⊥ 
+                                     (dyn (lambda (x) (x v ...))
+                                          σ 
+                                          σ_2)
+                                     ())))
+        (where S_halfprime 
+               (set-signal-in-store S 
+                                    σ_2 
+                                    (⊥ (fwd ⊥) ())))
+        "beta-v-lift")
    (--> (S I (in-hole E (if true e_1 e_2)))
-	;; reduces to
-	(S I (in-hole E e_1))
-	"if-true")
+        ;; reduces to
+        (S I (in-hole E e_1))
+        "if-true")
    (--> (S I (in-hole E (if false e_1 e_2)))
-	;; reduces to
-	(S I (in-hole E e_2))
-	"if-false")
+        ;; reduces to
+        (S I (in-hole E e_2))
+        "if-false")
    (--> (S (i ...) (in-hole E (if σ e_1 e_2)))
-	;; reduces to
-	((reg σ_1 (σ) S_prime) (σ_1 i ...) (in-hole E σ_2))
-	(where S_prime 
-	       (set-signal-in-store S_halfprime σ_1 (⊥ dyn-term ())))
-	(where dyn-term
-	       (dyn (lambda (x) (if x e_1 e_2)) σ  σ_2))
-	(where S_halfprime 
-	       (set-signal-in-store S σ_2 (⊥ (fwd ⊥) ())))
-	"if-lift") 
+        ;; reduces to
+        ((reg σ_1 (σ) S_prime) (σ_1 i ...) (in-hole E σ_2))
+        (where S_prime 
+               (set-signal-in-store S_halfprime σ_1 (⊥ dyn-term ())))
+        (where dyn-term
+               (dyn (lambda (x) (if x e_1 e_2)) σ  σ_2))
+        (where S_halfprime 
+               (set-signal-in-store S σ_2 (⊥ (fwd ⊥) ())))
+        "if-lift") 
    (--> (S (i ...) (in-hole E (delay σ n)))
-	;; reduces to 
-	(S_prime (σ_2 i ...) (in-hole E σ_1))
-	(where S_halfprime
-	       (set-signal-in-store S σ_2 (⊥ (delay σ n σ_1) ())))
-	(where S_almostprime
-	       (set-signal-in-store S_halfprime σ_1 (⊥ input ())))
-	(where S_prime (reg σ_2 (σ) S_almostprime))
-	"delay")))
+        ;; reduces to 
+        (S_prime (σ_2 i ...) (in-hole E σ_1))
+        (where S_halfprime
+               (set-signal-in-store S σ_2 (⊥ (delay σ n σ_1) ())))
+        (where S_almostprime
+               (set-signal-in-store S_halfprime σ_1 (⊥ input ())))
+        (where S_prime (reg σ_2 (σ) S_almostprime))
+        "delay")))
