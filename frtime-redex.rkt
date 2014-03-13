@@ -161,6 +161,7 @@
                (set-signal-in-store S_halfprime σ_1 (⊥ input ())))
         (where S_prime (reg σ_2 (σ) S_almostprime))
         "delay")))
+
 (define ->update
   (reduction-relation 
     FrTime-Semantics
@@ -174,6 +175,24 @@
          ;; reduces to
          (X S_prime I_prime t)
          (where S_prime (set-signal-in-store S σ (v (fwd σ_prime) Σ)))
-         (where Σ_a (A Σ v_0 v))
+	 (where I_prime (σ_a ... σ_fst ... σ_rst ...))
+         (where (σ_a ...) (A Σ v_0 v))
          (where (v_0 (fwd σ_prime) Σ) (get-signal-in-store S σ))
-         (where (v _ _) (get-signal-in-store S σ_prime)))))
+         (where (v _ _) (get-signal-in-store S σ_prime))
+	 "u-fwd")
+    (--> (X S I t)
+	 ;; reduces to
+	 (X S_1 I_prime-cleaned t)
+	 (where (σ_fst ... σ σ_rst ...) I)
+	 (where (⊥ (dyn u σ_1 σ_2) Σ) (get-signal-in-store S σ))
+	 (where (v (fwd _) Σ_2) (get-signal-in-store S σ_2))
+	 (where (S_* ()) (del* S Σ))
+	 (where (S_prime I_prime σ_3) 
+		(DO-SOME-WEIRD-ARROW-MAGIC S_* I (u (Vs S σ_1))))
+	 (where Σ_prime (remove-all (dom S_prime) (dom S)))
+	 (where S_updated-fwd (set-signal-in-store S_prime σ_2 (v (fwd σ_3) Σ_2)))
+	 (where S_updated-dyn (set-signal-in-store S_updated-fwd σ (⊥ (dyn u σ_1 σ_2) Σ_prime)))
+	 (where S_1 (reg σ_2 (σ_3) S_updated-dyn))
+	 (where I_prime-cleaned (remove-all (remove-all I Σ) (σ)))
+	 "u-dyn")))
+    
