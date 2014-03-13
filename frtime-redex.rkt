@@ -64,12 +64,30 @@
    (where (v_2 _ _) (get-signal-in-store S v))])
 
 (define-metafunction FrTime-Semantics
+  A : Σ v v -> Σ
+  [(A Σ v v) Σ]
+  [(A Σ v v_other) ()])
+
+(define-metafunction FrTime-Semantics
   reg : σ Σ S -> S
   [(reg σ () S) S]
   [(reg σ (σ_prime σ_prime2 ...) S) 
    (reg σ (σ_prime2 ...) S_updated)
    (where S_updated (set-signal-in-store S σ_prime (v s (σ σ_prime_set ...))))
    (where (v s (σ_prime_set ...)) (get-signal-in-store S σ_prime))])
+
+(define-metafunction FrTime-Semantics
+  Ds : S Σ -> Σ
+  [(Ds S Σ) (Ds* S Σ ())])
+
+(define-metafunction FrTime-Semantics
+  Ds* : S Σ Σ-> Σ
+  [(Ds* S () Σ) ,(remove-duplicates (term Σ))]
+  [(Ds* S (σ_first σ_rest ...) (σ_acc ...))
+   (Ds* S (σ_rest ...) (σ_first-in-store ... σ_acc ...))
+   (where (_ _ (σ_first-in-store ...)) (get-signal-in-store S σ_first))])
+
+
 
 (define ->construction
   (reduction-relation 
