@@ -37,7 +37,9 @@
      σ
      (σ v))
   (X ::= 
-     ((σ v n) ...))
+     (xs ...))
+  (xs ::=
+      (σ v n))
   (S ::= 
      ((v -> sis) ...))
   (sis ::=
@@ -61,7 +63,7 @@
 (define-metafunction FrTime-Semantics
   Vs : S v -> v
   [(Vs S v) v_2
-   (where (v_2 _ _) (get-signal-in-store S v))])
+   (where (v_2 s_any Σ_any) (get-signal-in-store S v))])
 
 (define-metafunction FrTime-Semantics
   A : Σ v v -> Σ
@@ -73,19 +75,19 @@
   [(reg σ () S) S]
   [(reg σ (σ_prime σ_prime2 ...) S) 
    (reg σ (σ_prime2 ...) S_updated)
-   (where S_updated (set-signal-in-store S σ_prime (v s (σ σ_prime_set ...))))
-   (where (v s (σ_prime_set ...)) (get-signal-in-store S σ_prime))])
+   (where (v s (σ_primeset ...)) (get-signal-in-store S σ_prime))
+   (where S_updated (set-signal-in-store S σ_prime (v s (σ σ_primeset ...))))])
 
 (define-metafunction FrTime-Semantics
   Ds : S Σ -> Σ
   [(Ds S Σ) (Ds* S Σ ())])
 
 (define-metafunction FrTime-Semantics
-  Ds* : S Σ Σ-> Σ
+  Ds* : S Σ Σ -> Σ
   [(Ds* S () Σ) ,(remove-duplicates (term Σ))]
   [(Ds* S (σ_first σ_rest ...) (σ_acc ...))
    (Ds* S (σ_rest ...) (σ_first-in-store ... σ_acc ...))
-   (where (_ _ (σ_first-in-store ...)) (get-signal-in-store S σ_first))])
+   (where (σ_any s_any (σ_first-in-store ...)) (get-signal-in-store S σ_first))])
 
 
 
@@ -171,28 +173,55 @@
          (X S I_prime ,(+ (term t) 1))
          (where I_prime (externals-at-time X ,(+ (term t) 1)))
          "u-shift")
-    (--> (X S (σ_fst ... σ σ_rst ...) t)
+    (--> (X S (i_fst ... σ i_rst ...) t)
          ;; reduces to
          (X S_prime I_prime t)
          (where S_prime (set-signal-in-store S σ (v (fwd σ_prime) Σ)))
-	 (where I_prime (σ_a ... σ_fst ... σ_rst ...))
          (where (σ_a ...) (A Σ v_0 v))
+         (where I_prime (σ_a ... i_fst ... i_rst ...))
          (where (v_0 (fwd σ_prime) Σ) (get-signal-in-store S σ))
-         (where (v _ _) (get-signal-in-store S σ_prime))
-	 "u-fwd")
+         (where (v s_any Σ_any) (get-signal-in-store S σ_prime))
+         "u-fwd")
     (--> (X S I t)
-	 ;; reduces to
-	 (X S_1 I_prime-cleaned t)
-	 (where (σ_fst ... σ σ_rst ...) I)
-	 (where (⊥ (dyn u σ_1 σ_2) Σ) (get-signal-in-store S σ))
-	 (where (v (fwd _) Σ_2) (get-signal-in-store S σ_2))
-	 (where (S_* ()) (del* S Σ))
-	 (where (S_prime I_prime σ_3) 
-		(DO-SOME-WEIRD-ARROW-MAGIC S_* I (u (Vs S σ_1))))
-	 (where Σ_prime (remove-all (dom S_prime) (dom S)))
-	 (where S_updated-fwd (set-signal-in-store S_prime σ_2 (v (fwd σ_3) Σ_2)))
-	 (where S_updated-dyn (set-signal-in-store S_updated-fwd σ (⊥ (dyn u σ_1 σ_2) Σ_prime)))
-	 (where S_1 (reg σ_2 (σ_3) S_updated-dyn))
-	 (where I_prime-cleaned (remove-all (remove-all I Σ) (σ)))
-	 "u-dyn")))
+         ;; reduces to
+         (X S_1 I_prime-cleaned t)
+         (where (i_fst ... σ i_rst ...) I)
+         (where (⊥ (dyn u σ_1 σ_2) Σ) (get-signal-in-store S σ))
+         (where (v (fwd σ_any) Σ_2) (get-signal-in-store S σ_2))
+         (where (S_* ()) (del* S Σ))
+         (where (S_prime I_prime σ_3) 
+                (DO-SOME-WEIRD-ARROW-MAGIC S_* I (u (Vs S σ_1))))
+         (where Σ_prime (remove-all (dom S_prime) (dom S)))
+         (where S_updated-fwd (set-signal-in-store S_prime σ_2 (v (fwd σ_3) Σ_2)))
+         (where S_updated-dyn (set-signal-in-store S_updated-fwd σ (⊥ (dyn u σ_1 σ_2) Σ_prime)))
+         (where S_1 (reg σ_2 (σ_3) S_updated-dyn))
+         (where I_prime-cleaned (remove-all (remove-all I Σ) (σ)))
+         "u-dyn")
+    (--> (X S I t)
+         ;; reduces to
+         (X S_prime I_prime t)
+         (where (i_fst ... (σ v) i_rst ...) I)
+         (where (v_0 input Σ) (get-signal-in-store S σ))
+         (where (σ_a ...) (A Σ v_0 v))
+         (where I_prime (σ_a ... i_fst ... i_rst ...))
+         (where S_prime (set-signal-in-store σ (v input Σ)))
+         "u-input")
+    (--> ((xs ...) S (i_fst ... σ i_rst ...) t)
+         ;; reduces to
+         (X_prime S I_prime t)
+         (where X_prime ((σ_1 (Vs S σ) ,(+ (term t) (term n))) xs ...))
+         (where I_prime (i_fst ... i_rst ...))
+         (where (⊥ (delay σ n σ_1) Σ) (get-signal-in-store S σ))
+         "u-delay")
+    (--> (X S I t)
+         ;; reduces to
+         (X S_prime I_prime t)
+         (where (i_fst ... σ i_rst ...) I)
+         (side-condition (not (member (term σ) (term (dfrd S I)))))
+         (where (v_0 (lift p v_1 ...) Σ) (get-signal-in-store S σ))
+         (where v (δ p (Vs v_1) ...))
+         (where S_prime (set-signal-in-store S σ (v (lift p v_1 ...) Σ)))
+         (where (σ_a ...) (A Σ v_0 v))
+         (where I_prime (σ_a ... i_fst ... i_rst ...))
+         "u-lift")))
     
