@@ -22,7 +22,7 @@
 
   ;; Signal Types
   (s (lift p v ...)
-     (delay SIMGA n σ)
+     (delay σ n σ)
      (dyn (lambda (v) e) σ σ)
      (fwd σ)
      input
