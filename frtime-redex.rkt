@@ -161,3 +161,19 @@
                (set-signal-in-store S_halfprime σ_1 (⊥ input ())))
         (where S_prime (reg σ_2 (σ) S_almostprime))
         "delay")))
+(define ->update
+  (reduction-relation 
+    FrTime-Semantics
+    #:domain (X S I t)
+    (--> (X S () t)
+         ;; reduces to
+         (X S I_prime ,(+ (term t) 1))
+         (where I_prime (externals-at-time X ,(+ (term t) 1)))
+         "u-shift")
+    (--> (X S (σ_fst ... σ σ_rst ...) t)
+         ;; reduces to
+         (X S_prime I_prime t)
+         (where S_prime (set-signal-in-store S σ (v (fwd σ_prime) Σ)))
+         (where Σ_a (A Σ v_0 v))
+         (where (v_0 (fwd σ_prime) Σ) (get-signal-in-store S σ))
+         (where (v _ _) (get-signal-in-store S σ_prime)))))
