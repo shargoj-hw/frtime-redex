@@ -45,12 +45,25 @@
   (sis ::=
        (v s (σ ...))))
 
+(module+ test
+  (define S1
+    (term (((loc 0) -> (4 (lift + 3 (loc 4)) ()))
+	   ((loc 4) -> (2 const ((loc 0)))))))
+
+  (test-equal (redex-match? FrTime-Semantics S S1) #t))
+
 (define-metafunction FrTime-Semantics
   get-signal-in-store : S v -> sis or #f
   [(get-signal-in-store ((v_1 -> sis_1) ... (v -> sis) (v_2 -> sis_2) ...) v)
    sis
    (side-condition (not (member (term v) (term (v_1 ...)))))]
   [(get-signal-in-store S v) #f])
+
+(module+ test
+  (test-equal (term (get-signal-in-store ,S1 (loc 4)))
+	      (term (2 const ((loc 0)))))
+  (test-equal (term (get-signal-in-store ,S1 (loc 99)))
+	      (term #f)))
 
 (define-metafunction FrTime-Semantics
   set-signal-in-store : S v sis -> S
@@ -60,15 +73,35 @@
   [(set-signal-in-store ((v_1 -> sis_1) ...) v sis)
    ((v -> sis) (v_1 -> sis_1) ...)])
 
+(module+ test
+  (test-equal (term (set-signal-in-store ,S1 (loc 0) (309 const ())))
+	      (term (((loc 0) -> (309 const ()))
+		     ((loc 4) -> (2 const ((loc 0)))))))
+  (test-equal (term (set-signal-in-store ,S1 (loc 9) (309 const ())))
+	      (term (((loc 9) -> (309 const ()))
+		     ((loc 0) -> (4 (lift + 3 (loc 4)) ()))
+		     ((loc 4) -> (2 const ((loc 0))))))))
+
 (define-metafunction FrTime-Semantics
   Vs : S v -> v
   [(Vs S v) v_2
    (where (v_2 s_any Σ_any) (get-signal-in-store S v))])
 
+(module+ test
+  (test-equal (term (Vs ,S1 (loc 0))) 4)
+  (test-equal (term (Vs ,S1 (loc 4))) 2))
+
 (define-metafunction FrTime-Semantics
   A : Σ v v -> Σ
   [(A Σ v v) Σ]
   [(A Σ v v_other) ()])
+
+(module+ test
+  (define Σ1 (term ((loc 0) (loc 3) (loc 9))))
+
+  (test-equal (redex-match? FrTime-Semantics Σ Σ1) #t)
+  (test-equal (term (A ,Σ1 (lambda (x) x) (lambda (x) x))) Σ1)
+  (test-equal (term (A ,Σ1 (lambda (x) x) (loc 5))) (term ())))
 
 (define-metafunction FrTime-Semantics
   reg : σ Σ S -> S
@@ -88,7 +121,6 @@
   [(Ds* S (σ_first σ_rest ...) (σ_acc ...))
    (Ds* S (σ_rest ...) (σ_first-in-store ... σ_acc ...))
    (where (σ_any s_any (σ_first-in-store ...)) (get-signal-in-store S σ_first))])
-
 
 
 (define ->construction
@@ -225,3 +257,4 @@
          (where I_prime (σ_a ... i_fst ... i_rst ...))
          "u-lift")))
     
+(module+ test (test-results))
