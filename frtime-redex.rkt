@@ -5,7 +5,7 @@
 (define-language FrTime
   ;; Store locations
   ;; TODO: is this right?
-  (σ (loc x))
+  (σ (loc x) (loc ⊥))
 
   ;; Variables
   (x variable-not-otherwise-mentioned)
@@ -25,7 +25,7 @@
   ;; Signal Types
   (s (lift p v ...)
      (delay σ n σ)
-     (dyn (lambda (v) e) σ σ)
+     (dyn (lambda (x) e) σ σ)
      (fwd σ)
      input
      const))
@@ -86,7 +86,7 @@
   (define lifted-+
     (term (+ 3 (loc var0))))
   (define signal-in-if
-    (term ((lambda (n) (if (< n (+ n 5)) true false)) (loc var0))))
+    (term ((lambda (n) (if (< n (+ n 5)) true false)) (loc seconds))))
 
   (test-equal (redex-match? FrTime e no-signals) #t)
   (test-equal (redex-match? FrTime e lifted-+) #t)
@@ -368,9 +368,9 @@
                ,(filter (lambda (x) (redex-match? FrTime σ x))
                         (term (v ...))))
         (side-condition (not (empty? (term σ_args))))
-	(where (x ...) (all-signal-names S))
-	(where x_new (fresh x ...))
-	(where σ (loc x_new))
+	(fresh lifted-prim)
+	(where x_generated lifted-prim)
+	(where σ (loc x_generated))
         (where S_prime
                (reg σ 
                     (σ_arg ...)
@@ -385,6 +385,15 @@
         ((reg σ_1 (σ) S_prime)
          (σ_1 i ...)
          (in-hole E σ_2))
+	(fresh beta-dyn beta-fwd)
+	(where x_beta-dyn beta-dyn)
+	(where x_beta-fwd beta-fwd)
+	(where σ_1 (loc x_beta-dyn))
+	(where σ_2 (loc x_beta-fwd))
+        (where S_halfprime 
+               (set-signal-in-store S 
+                                    σ_2 
+                                    (⊥ (fwd (loc ⊥)) ())))
         (where S_prime 
                (set-signal-in-store S_halfprime 
                                     σ_1 
@@ -393,10 +402,6 @@
                                           σ 
                                           σ_2)
                                      ())))
-        (where S_halfprime 
-               (set-signal-in-store S 
-                                    σ_2 
-                                    (⊥ (fwd ⊥) ())))
         "beta-v-lift")
    (--> (S I (in-hole E (if true e_1 e_2)))
         ;; reduces to
@@ -409,25 +414,32 @@
    (--> (S (i ...) (in-hole E (if σ e_1 e_2)))
         ;; reduces to
         ((reg σ_1 (σ) S_prime) (σ_1 i ...) (in-hole E σ_2))
-        (where S_prime 
-               (set-signal-in-store S_halfprime σ_1 (⊥ dyn-term ())))
-        (where dyn-term
-               (dyn (lambda (x) (if x e_1 e_2)) σ  σ_2))
+	(fresh if-dyn if-fwd)
+	(where x_if-dyn if-dyn)
+	(where x_if-fwd if-fwd)
+	(where σ_1 (loc x_if-dyn))
+	(where σ_2 (loc x_if-fwd))
+        (where s_dyn-term
+               (dyn (lambda (x) (if x e_1 e_2)) σ σ_2))
         (where S_halfprime 
-               (set-signal-in-store S σ_2 (⊥ (fwd ⊥) ())))
+               (set-signal-in-store S σ_2 (⊥ (fwd (loc ⊥)) ())))
+        (where S_prime 
+               (set-signal-in-store S_halfprime σ_1 (⊥ s_dyn-term ())))
         "if-lift") 
    (--> (S (i ...) (in-hole E (delay σ n)))
         ;; reduces to 
         (S_prime (σ_2 i ...) (in-hole E σ_1))
+	(fresh delay-input delay-delay)
+	(where x_delay-input delay-input)
+	(where x_delay-delay delay-delay)
+	(where σ_1 (loc x_delay-input))
+	(where σ_2 (loc x_delay-delay))
         (where S_halfprime
                (set-signal-in-store S σ_2 (⊥ (delay σ n σ_1) ())))
         (where S_almostprime
                (set-signal-in-store S_halfprime σ_1 (⊥ input ())))
         (where S_prime (reg σ_2 (σ) S_almostprime))
         "delay")))
-
-(define signal-in-if
-    (term ((lambda (n) (if (< n (+ n 5)) true false)) (loc var0))))
 
 (define ->update
   (reduction-relation 
