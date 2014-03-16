@@ -195,9 +195,9 @@
 
 (define-metafunction FrTime-Semantics
   del* : S Σ S Σ -> (S Σ)
-  [(del () Σ_in S_acc Σ_acc) (S_acc Σ_acc)]
-  [(del S_in Σ_in S_acc (σ_acc ...))
-   (del ((v_rest -> sis_rest) ...) Σ_in S_stored Σ_newacc)
+  [(del* () Σ_in S_acc Σ_acc) (S_acc Σ_acc)]
+  [(del* S_in Σ_in S_acc (σ_acc ...))
+   (del* ((v_rest -> sis_rest) ...) Σ_in S_stored Σ_newacc)
    (where ((v_1 -> sis_1) (v_rest -> sis_rest) ...) S_in)
    (where (v_dep s_dep (σ_dep ...)) sis_1)
    (where (dyn (lambda (v_lambda) e_lambda) σ_any σ_any2) s_dep)
@@ -205,8 +205,8 @@
    (where S_stored (set-signal-in-store S_acc v_1 (v_dep s_dep Σ_removed)))
    (where Σ_removed (remove-all (σ_dep ...) Σ_in))
    (where Σ_newacc ,(remove-duplicates (term (σ_dep ... σ_acc ...))))]
-  [(del S_in Σ_in S_acc Σ_acc)
-   (del ((v_rest -> sis_rest) ...) Σ_in S_stored Σ_acc)
+  [(del* S_in Σ_in S_acc Σ_acc)
+   (del* ((v_rest -> sis_rest) ...) Σ_in S_stored Σ_acc)
    (where ((v_1 -> sis_1) (v_rest -> sis_rest) ...) S_in)
    (where (v_dep s_dep (σ_dep ...)) sis_1)
    (where (dyn (lambda (v_lambda) e_lambda) σ_any σ_any2) s_dep)
