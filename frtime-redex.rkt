@@ -31,8 +31,8 @@
 (module+ test
   (define no-signals
     (term (if (> (+ 3 8) (- 9 2))
-	      ((lambda (a b) (- b a)) 4 5)
-	      true)))
+              ((lambda (a b) (- b a)) 4 5)
+              true)))
   (define lifted-+
     (term (+ 3 (loc var0))))
   (define signal-in-if
@@ -110,15 +110,15 @@
 (module+ test
   (define S1
     (term (((loc var0) -> (4 (lift + 3 (loc var4)) ()))
-	   ((loc var4) -> (2 const ((loc var0)))))))
+           ((loc var4) -> (2 const ((loc var0)))))))
   (define S2 
     (term (((loc var4) -> (⊥ const ()))
-	   ((loc var2) -> (94 const ((loc var80))))
-	   ((loc var3) -> (20 input ((loc var20)))))))
+           ((loc var2) -> (94 const ((loc var80))))
+           ((loc var3) -> (20 input ((loc var20)))))))
   (define S3
     (term (((loc var4) -> (⊥ const ((loc var9))))
-	   ((loc var2) -> (94 const ((loc var9) (loc var80))))
-	   ((loc var3) -> (20 input ((loc var20)))))))
+           ((loc var2) -> (94 const ((loc var9) (loc var80))))
+           ((loc var3) -> (20 input ((loc var20)))))))
   (define Σ1 (term ((loc var0) (loc var3) (loc var9))))
 
   (test-equal (redex-match? FrTime-Semantics S S1) #t)
@@ -157,9 +157,9 @@
 
 (module+ test
   (test-equal (term (get-signal-in-store ,S1 (loc var4)))
-	      (term (2 const ((loc var0)))))
+              (term (2 const ((loc var0)))))
   (test-equal (term (get-signal-in-store ,S1 (loc var99)))
-	      (term #f)))
+              (term #f)))
 
 ;; get-signal-in-store : S v sis -> S
 ;; Updates or adds the signal v in the given store with the given
@@ -174,12 +174,12 @@
 
 (module+ test
   (test-equal (term (set-signal-in-store ,S1 (loc var0) (309 const ())))
-	      (term (((loc var0) -> (309 const ()))
-		     ((loc var4) -> (2 const ((loc var0)))))))
+              (term (((loc var0) -> (309 const ()))
+                     ((loc var4) -> (2 const ((loc var0)))))))
   (test-equal (term (set-signal-in-store ,S1 (loc var9) (309 const ())))
-	      (term (((loc var9) -> (309 const ()))
-		     ((loc var0) -> (4 (lift + 3 (loc var4)) ()))
-		     ((loc var4) -> (2 const ((loc var0))))))))
+              (term (((loc var9) -> (309 const ()))
+                     ((loc var0) -> (4 (lift + 3 (loc var4)) ()))
+                     ((loc var4) -> (2 const ((loc var0))))))))
 
 ;; Vs : S v -> v
 ;; Get the current value of the given sigma
@@ -304,7 +304,7 @@
    (term (remove-all (1 2 4 5 4 5) (1 4))) 
    (term (2 5 5)))
   (test-equal (term (remove-all (1 2 3 4 5) (6)))
-	      (term (1 2 3 4 5))))
+              (term (1 2 3 4 5))))
 
 (define-metafunction FrTime-Semantics
   del : S Σ -> (S Σ)
@@ -326,19 +326,19 @@
         [result-Σ  (term ())])
     (test-equal (term (del ,example-S ,example-Σ))
                 (term (,result-S ,result-Σ)))) 
-   (let ([example-S (term (((loc my-x) -> 
-                            (true
-                             (dyn (lambda (x) x) 
-                                  (loc my-a)
-                                  (loc my-b)) 
-                             ((loc my-y))))))]
+  (let ([example-S (term (((loc my-x) -> 
+                           (true
+                            (dyn (lambda (x) x) 
+                                 (loc my-a)
+                                 (loc my-b)) 
+                            ((loc my-y))))))]
         [example-Σ (term ((loc my-y)))]
         [result-S  (term (((loc my-x) -> 
                            (true
-                             (dyn (lambda (x) x) 
-                                  (loc my-a)
-                                  (loc my-b)) 
-                             ()))))]
+                            (dyn (lambda (x) x) 
+                                 (loc my-a)
+                                 (loc my-b)) 
+                            ()))))]
         [result-Σ  (term ((loc my-y)))])
     (test-equal (term (del ,example-S ,example-Σ))
                 (term (,result-S ,result-Σ)))))
@@ -354,8 +354,8 @@
                                    (dyn (lambda (x) (+ x 3)) 
                                         (loc my-a) 
                                         (loc my-b))
-                                        ((loc my-z)))
-                                    ()))
+                                   ((loc my-z)))
+                                  ()))
               (term ((loc my-z))))
   (test-equal (term (get-dyn-deps (true const ((loc my-z))) ()))
               (term ())))
@@ -392,10 +392,10 @@
                          ((loc my-e) ⊥ 6)))]
         [i-at-seven (term (((loc my-d) +) ((loc my-b) false)))]
         [i-at-five  (term (((loc my-c) (lambda (x) x)) ((loc my-a) true)))])  
-  (test-equal (term (externals-at-time ,simple-x 5))
-              i-at-five)
-  (test-equal (term (externals-at-time ,simple-x 7))
-              i-at-seven)))
+    (test-equal (term (externals-at-time ,simple-x 5))
+                i-at-five)
+    (test-equal (term (externals-at-time ,simple-x 7))
+                i-at-seven)))
 
 (define ->construction
   (reduction-relation 
@@ -415,9 +415,9 @@
                ,(filter (lambda (x) (redex-match? FrTime σ x))
                         (term (v ...))))
         (side-condition (not (empty? (term σ_args))))
-	(fresh lifted-prim)
-	(where x_generated lifted-prim)
-	(where σ (loc x_generated))
+        (fresh lifted-prim)
+        (where x_generated lifted-prim)
+        (where σ (loc x_generated))
         (where S_prime
                (reg σ 
                     (σ_arg ...)
@@ -432,11 +432,11 @@
         ((reg σ_1 (σ) S_prime)
          (σ_1 i ...)
          (in-hole E σ_2))
-	(fresh beta-dyn beta-fwd)
-	(where x_beta-dyn beta-dyn)
-	(where x_beta-fwd beta-fwd)
-	(where σ_1 (loc x_beta-dyn))
-	(where σ_2 (loc x_beta-fwd))
+        (fresh beta-dyn beta-fwd)
+        (where x_beta-dyn beta-dyn)
+        (where x_beta-fwd beta-fwd)
+        (where σ_1 (loc x_beta-dyn))
+        (where σ_2 (loc x_beta-fwd))
         (where S_halfprime 
                (set-signal-in-store S 
                                     σ_2 
@@ -461,11 +461,11 @@
    (--> (S (i ...) (in-hole E (if σ e_1 e_2)))
         ;; reduces to
         ((reg σ_1 (σ) S_prime) (σ_1 i ...) (in-hole E σ_2))
-	(fresh if-dyn if-fwd)
-	(where x_if-dyn if-dyn)
-	(where x_if-fwd if-fwd)
-	(where σ_1 (loc x_if-dyn))
-	(where σ_2 (loc x_if-fwd))
+        (fresh if-dyn if-fwd)
+        (where x_if-dyn if-dyn)
+        (where x_if-fwd if-fwd)
+        (where σ_1 (loc x_if-dyn))
+        (where σ_2 (loc x_if-fwd))
         (where s_dyn-term
                (dyn (lambda (x) (if x e_1 e_2)) σ σ_2))
         (where S_halfprime 
@@ -476,11 +476,11 @@
    (--> (S (i ...) (in-hole E (delay σ n)))
         ;; reduces to 
         (S_prime (σ_2 i ...) (in-hole E σ_1))
-	(fresh delay-input delay-delay)
-	(where x_delay-input delay-input)
-	(where x_delay-delay delay-delay)
-	(where σ_1 (loc x_delay-input))
-	(where σ_2 (loc x_delay-delay))
+        (fresh delay-input delay-delay)
+        (where x_delay-input delay-input)
+        (where x_delay-delay delay-delay)
+        (where σ_1 (loc x_delay-input))
+        (where σ_2 (loc x_delay-delay))
         (where S_halfprime
                (set-signal-in-store S σ_2 (⊥ (delay σ n σ_1) ())))
         (where S_almostprime
@@ -490,63 +490,63 @@
 
 (define ->update
   (reduction-relation 
-    FrTime-Semantics
-    #:domain (X S I t)
-    (--> (X S () t)
-         ;; reduces to
-         (X S I_prime ,(+ (term t) 1))
-         (where I_prime (externals-at-time X ,(+ (term t) 1)))
-         "u-shift")
-    (--> (X S (i_fst ... σ i_rst ...) t)
-         ;; reduces to
-         (X S_prime I_prime t)
-         (where S_prime (set-signal-in-store S σ (v (fwd σ_prime) Σ)))
-         (where (σ_a ...) (A Σ v_0 v))
-         (where I_prime (σ_a ... i_fst ... i_rst ...))
-         (where (v_0 (fwd σ_prime) Σ) (get-signal-in-store S σ))
-         (where (v s_any Σ_any) (get-signal-in-store S σ_prime))
-         "u-fwd")
-    (--> (X S I t)
-         ;; reduces to
-         (X S_1 I_prime-cleaned t)
-         (where (i_fst ... σ i_rst ...) I)
-         (where (⊥ (dyn u σ_1 σ_2) Σ) (get-signal-in-store S σ))
-         (where (v (fwd σ_any) Σ_2) (get-signal-in-store S σ_2))
-         (where (S_* ()) (del* S Σ))
-         (where (S_prime I_prime σ_3) 
-                (apply-reduction-relation* ->construction (term (S_* I (u (Vs S σ_1))))))
-         (where Σ_prime (remove-all (dom S_prime) (dom S)))
-         (where S_updated-fwd (set-signal-in-store S_prime σ_2 (v (fwd σ_3) Σ_2)))
-         (where S_updated-dyn (set-signal-in-store S_updated-fwd σ (⊥ (dyn u σ_1 σ_2) Σ_prime)))
-         (where S_1 (reg σ_2 (σ_3) S_updated-dyn))
-         (where I_prime-cleaned (remove-all (remove-all I Σ) (σ)))
-         "u-dyn")
-    (--> (X S I t)
-         ;; reduces to
-         (X S_prime I_prime t)
-         (where (i_fst ... (σ v) i_rst ...) I)
-         (where (v_0 input Σ) (get-signal-in-store S σ))
-         (where (σ_a ...) (A Σ v_0 v))
-         (where I_prime (σ_a ... i_fst ... i_rst ...))
-         (where S_prime (set-signal-in-store σ (v input Σ)))
-         "u-input")
-    (--> ((xs ...) S (i_fst ... σ i_rst ...) t)
-         ;; reduces to
-         (X_prime S I_prime t)
-         (where X_prime ((σ_1 (Vs S σ) ,(+ (term t) (term n))) xs ...))
-         (where I_prime (i_fst ... i_rst ...))
-         (where (⊥ (delay σ n σ_1) Σ) (get-signal-in-store S σ))
-         "u-delay")
-    (--> (X S I t)
-         ;; reduces to
-         (X S_prime I_prime t)
-         (where (i_fst ... σ i_rst ...) I)
-         (side-condition (not (member (term σ) (term (dfrd S I)))))
-         (where (v_0 (lift p v_1 ...) Σ) (get-signal-in-store S σ))
-         (where v (δ p (Vs v_1) ...))
-         (where S_prime (set-signal-in-store S σ (v (lift p v_1 ...) Σ)))
-         (where (σ_a ...) (A Σ v_0 v))
-         (where I_prime (σ_a ... i_fst ... i_rst ...))
-         "u-lift")))
+   FrTime-Semantics
+   #:domain (X S I t)
+   (--> (X S () t)
+        ;; reduces to
+        (X S I_prime ,(+ (term t) 1))
+        (where I_prime (externals-at-time X ,(+ (term t) 1)))
+        "u-shift")
+   (--> (X S (i_fst ... σ i_rst ...) t)
+        ;; reduces to
+        (X S_prime I_prime t)
+        (where S_prime (set-signal-in-store S σ (v (fwd σ_prime) Σ)))
+        (where (σ_a ...) (A Σ v_0 v))
+        (where I_prime (σ_a ... i_fst ... i_rst ...))
+        (where (v_0 (fwd σ_prime) Σ) (get-signal-in-store S σ))
+        (where (v s_any Σ_any) (get-signal-in-store S σ_prime))
+        "u-fwd")
+   (--> (X S I t)
+        ;; reduces to
+        (X S_1 I_prime-cleaned t)
+        (where (i_fst ... σ i_rst ...) I)
+        (where (⊥ (dyn u σ_1 σ_2) Σ) (get-signal-in-store S σ))
+        (where (v (fwd σ_any) Σ_2) (get-signal-in-store S σ_2))
+        (where (S_* ()) (del* S Σ))
+        (where (S_prime I_prime σ_3) 
+               (apply-reduction-relation* ->construction (term (S_* I (u (Vs S σ_1))))))
+        (where Σ_prime (remove-all (dom S_prime) (dom S)))
+        (where S_updated-fwd (set-signal-in-store S_prime σ_2 (v (fwd σ_3) Σ_2)))
+        (where S_updated-dyn (set-signal-in-store S_updated-fwd σ (⊥ (dyn u σ_1 σ_2) Σ_prime)))
+        (where S_1 (reg σ_2 (σ_3) S_updated-dyn))
+        (where I_prime-cleaned (remove-all (remove-all I Σ) (σ)))
+        "u-dyn")
+   (--> (X S I t)
+        ;; reduces to
+        (X S_prime I_prime t)
+        (where (i_fst ... (σ v) i_rst ...) I)
+        (where (v_0 input Σ) (get-signal-in-store S σ))
+        (where (σ_a ...) (A Σ v_0 v))
+        (where I_prime (σ_a ... i_fst ... i_rst ...))
+        (where S_prime (set-signal-in-store σ (v input Σ)))
+        "u-input")
+   (--> ((xs ...) S (i_fst ... σ i_rst ...) t)
+        ;; reduces to
+        (X_prime S I_prime t)
+        (where X_prime ((σ_1 (Vs S σ) ,(+ (term t) (term n))) xs ...))
+        (where I_prime (i_fst ... i_rst ...))
+        (where (⊥ (delay σ n σ_1) Σ) (get-signal-in-store S σ))
+        "u-delay")
+   (--> (X S I t)
+        ;; reduces to
+        (X S_prime I_prime t)
+        (where (i_fst ... σ i_rst ...) I)
+        (side-condition (not (member (term σ) (term (dfrd S I)))))
+        (where (v_0 (lift p v_1 ...) Σ) (get-signal-in-store S σ))
+        (where v (δ p (Vs v_1) ...))
+        (where S_prime (set-signal-in-store S σ (v (lift p v_1 ...) Σ)))
+        (where (σ_a ...) (A Σ v_0 v))
+        (where I_prime (σ_a ... i_fst ... i_rst ...))
+        "u-lift")))
 
 (module+ test (test-results))
