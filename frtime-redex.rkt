@@ -240,6 +240,24 @@
    (term (I->Σ (((loc 9) 3) (loc 10) ((loc 4) 1)) ()))
    (term ((loc 4) (loc 10) (loc 9)))))
 
+;; remove-all : (any ...) (any ...) -> (any ...)
+;; Removes all of the elements of the second list from the first.
+(define-metafunction FrTime-Semantics
+  remove-all : (any ...) (any ...) -> (any ...)
+  [(remove-all (any ...) ()) (any ...)]
+  [(remove-all (any_begin ... any any_end ...) (any any_rest ...))
+   (remove-all (any_begin ... any_end ...) (any any_rest ...))]
+  [(remove-all (any ...) (any_rem any_rest ...))
+   (remove-all (any ...) (any_rest ...))
+   (side-condition (not (member (term any_rem) (term (any ...)))))])
+
+(module+ test
+  (test-equal 
+   (term (remove-all (1 2 4 5 4 5) (1 4))) 
+   (term (2 5 5)))
+  (test-equal (term (remove-all (1 2 3 4 5) (6)))
+	      (term (1 2 3 4 5))))
+
 (define-metafunction FrTime-Semantics
   del : S Σ -> (S Σ)
   [(del S Σ) (del* S Σ () ())])
