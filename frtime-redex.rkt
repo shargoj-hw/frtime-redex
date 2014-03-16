@@ -48,13 +48,13 @@
   subst-n : (x any) ... any -> any
   [(subst-n (x_1 any_1) (x_2 any_2) ... any_3)
    (subst x_1 any_1 (subst-n (x_2 any_2) ... any_3))]
-  [(subst-n any_3) 
+  [(subst-n any_3)
    any_3])
 
-;; (subst x e_1 e) replaces all occurrences of 
-;; x in e with e_1 HYGIENICALLY 
+;; (subst x e_1 e) replaces all occurrences of
+;; x in e with e_1 HYGIENICALLY
 (define-metafunction FrTime
-  subst : x any any -> any 
+  subst : x any any -> any
   ;; 1. x_1 bound, so don't continue in λ body
   [(subst x_1 any_1 (lambda (x_2 ... x_1 x_3 ...) any_2))
    (lambda (x_2 ... x_1 x_3 ...) any_2)]
@@ -71,38 +71,38 @@
    ((subst x_1 any_1 any_2) ...)]
   [(subst x_1 any_1 any_2) any_2])
 
-;; (subst-vars (x_1 e_1) ... e) replaces all occurrences of 
-;; x_1, ... in e with e_1, ... UNCONDITIONALLY 
+;; (subst-vars (x_1 e_1) ... e) replaces all occurrences of
+;; x_1, ... in e with e_1, ... UNCONDITIONALLY
 (define-metafunction FrTime
-  subst-vars* : (x any) ... any -> any 
-  [(subst-vars* any) 
+  subst-vars* : (x any) ... any -> any
+  [(subst-vars* any)
    any]
-  [(subst-vars* (x_1 any_1) (x_2 any_2) ... any) 
+  [(subst-vars* (x_1 any_1) (x_2 any_2) ... any)
    (subst-vars x_1 any_1 (subst-vars* (x_2 any_2) ... any))])
 
-;; (subst-vars x e_1 e) replaces all occurrences of 
-;; x in e with e_1 UNCONDITIONALLY 
+;; (subst-vars x e_1 e) replaces all occurrences of
+;; x in e with e_1 UNCONDITIONALLY
 (define-metafunction FrTime
-  subst-vars : x any any -> any 
+  subst-vars : x any any -> any
   [(subst-vars x_1 any_1 x_1) any_1]
   [(subst-vars x_1 any_1 (any_2 ...)) ((subst-vars x_1 any_1 any_2) ...)]
   [(subst-vars x_1 any_1 any_2) any_2]
-  [(subst-vars x_1 any_1 (x_2 any_2) ... any_3) 
+  [(subst-vars x_1 any_1 (x_2 any_2) ... any_3)
    (subst-vars x_1 any_1 (subst-vars ((x_2 any_2) ... any_3)))])
 
 (define-extended-language FrTime-Semantics FrTime
-  (Σ ::= 
+  (Σ ::=
      (σ ...))
-  (I ::= 
+  (I ::=
      (i ...))
-  (i ::= 
+  (i ::=
      σ
      (σ v))
-  (X ::= 
+  (X ::=
      (xs ...))
   (xs ::=
       (σ v n))
-  (S ::= 
+  (S ::=
      ((v -> sis) ...))
   (sis ::=
        (v s (σ ...))))
@@ -111,7 +111,7 @@
   (define S1
     (term (((loc var0) -> (4 (lift + 3 (loc var4)) ()))
            ((loc var4) -> (2 const ((loc var0)))))))
-  (define S2 
+  (define S2
     (term (((loc var4) -> (⊥ const ()))
            ((loc var2) -> (94 const ((loc var80))))
            ((loc var3) -> (20 input ((loc var20)))))))
@@ -193,7 +193,7 @@
   (test-equal (term (Vs ,S1 (loc var4))) 2))
 
 ;; A : Σ v v -> Σ
-;; Returns Sigma if the values are equal, or the empty list 
+;; Returns Sigma if the values are equal, or the empty list
 ;; otherwise
 (define-metafunction FrTime-Semantics
   A : Σ v v -> Σ
@@ -209,7 +209,7 @@
 (define-metafunction FrTime-Semantics
   reg : σ Σ S -> S
   [(reg σ () S) S]
-  [(reg σ (σ_prime σ_prime2 ...) S) 
+  [(reg σ (σ_prime σ_prime2 ...) S)
    (reg σ (σ_prime2 ...) S_updated)
    (where (v s (σ_primeset ...)) (get-signal-in-store S σ_prime))
    (where S_updated (set-signal-in-store S σ_prime (v s (σ σ_primeset ...))))])
@@ -300,8 +300,8 @@
    (side-condition (not (member (term any_rem) (term (any ...)))))])
 
 (module+ test
-  (test-equal 
-   (term (remove-all (1 2 4 5 4 5) (1 4))) 
+  (test-equal
+   (term (remove-all (1 2 4 5 4 5) (1 4)))
    (term (2 5 5)))
   (test-equal (term (remove-all (1 2 3 4 5) (6)))
               (term (1 2 3 4 5))))
@@ -325,19 +325,19 @@
         [result-S  (term (((loc my-x) -> (true const ()))))]
         [result-Σ  (term ())])
     (test-equal (term (del ,example-S ,example-Σ))
-                (term (,result-S ,result-Σ)))) 
-  (let ([example-S (term (((loc my-x) -> 
+                (term (,result-S ,result-Σ))))
+  (let ([example-S (term (((loc my-x) ->
                            (true
-                            (dyn (lambda (x) x) 
+                            (dyn (lambda (x) x)
                                  (loc my-a)
-                                 (loc my-b)) 
+                                 (loc my-b))
                             ((loc my-y))))))]
         [example-Σ (term ((loc my-y)))]
-        [result-S  (term (((loc my-x) -> 
+        [result-S  (term (((loc my-x) ->
                            (true
-                            (dyn (lambda (x) x) 
+                            (dyn (lambda (x) x)
                                  (loc my-a)
-                                 (loc my-b)) 
+                                 (loc my-b))
                             ()))))]
         [result-Σ  (term ((loc my-y)))])
     (test-equal (term (del ,example-S ,example-Σ))
@@ -351,8 +351,8 @@
 
 (module+ test
   (test-equal (term (get-dyn-deps (true
-                                   (dyn (lambda (x) (+ x 3)) 
-                                        (loc my-a) 
+                                   (dyn (lambda (x) (+ x 3))
+                                        (loc my-a)
                                         (loc my-b))
                                    ((loc my-z)))
                                   ()))
@@ -391,27 +391,27 @@
                          ((loc my-d) + 7)
                          ((loc my-e) ⊥ 6)))]
         [i-at-seven (term (((loc my-d) +) ((loc my-b) false)))]
-        [i-at-five  (term (((loc my-c) (lambda (x) x)) ((loc my-a) true)))])  
+        [i-at-five  (term (((loc my-c) (lambda (x) x)) ((loc my-a) true)))])
     (test-equal (term (externals-at-time ,simple-x 5))
                 i-at-five)
     (test-equal (term (externals-at-time ,simple-x 7))
                 i-at-seven)))
 
 (define ->construction
-  (reduction-relation 
+  (reduction-relation
    FrTime-Semantics
    #:domain (S I e)
    (--> (S I (in-hole E (p v ...)))
         ;; reduces to
-        (S I (in-hole E v_applied)) 
+        (S I (in-hole E v_applied))
         (side-condition (andmap (lambda (x) (not (redex-match? FrTime σ x)))
                                 (term (v ...))))
         (where v_applied (δ p v ...))
         "primitive-application")
-   (--> (S (i ...) (in-hole E (p v ...))) 
+   (--> (S (i ...) (in-hole E (p v ...)))
         ;; reduces to
         (S_prime (σ i ...) (in-hole E σ))
-        (where (σ_arg ...) 
+        (where (σ_arg ...)
                ,(filter (lambda (x) (redex-match? FrTime σ x))
                         (term (v ...))))
         (side-condition (not (empty? (term σ_args))))
@@ -419,7 +419,7 @@
         (where x_generated lifted-prim)
         (where σ (loc x_generated))
         (where S_prime
-               (reg σ 
+               (reg σ
                     (σ_arg ...)
                     (set-signal-in-store S σ (⊥ (lift p v ...) ()))))
         "primitive-lift")
@@ -437,16 +437,16 @@
         (where x_beta-fwd beta-fwd)
         (where σ_1 (loc x_beta-dyn))
         (where σ_2 (loc x_beta-fwd))
-        (where S_halfprime 
-               (set-signal-in-store S 
-                                    σ_2 
+        (where S_halfprime
+               (set-signal-in-store S
+                                    σ_2
                                     (⊥ (fwd (loc ⊥)) ())))
-        (where S_prime 
-               (set-signal-in-store S_halfprime 
-                                    σ_1 
-                                    (⊥ 
+        (where S_prime
+               (set-signal-in-store S_halfprime
+                                    σ_1
+                                    (⊥
                                      (dyn (lambda (x) (x v ...))
-                                          σ 
+                                          σ
                                           σ_2)
                                      ())))
         "beta-v-lift")
@@ -468,13 +468,13 @@
         (where σ_2 (loc x_if-fwd))
         (where s_dyn-term
                (dyn (lambda (x) (if x e_1 e_2)) σ σ_2))
-        (where S_halfprime 
+        (where S_halfprime
                (set-signal-in-store S σ_2 (⊥ (fwd (loc ⊥)) ())))
-        (where S_prime 
+        (where S_prime
                (set-signal-in-store S_halfprime σ_1 (⊥ s_dyn-term ())))
-        "if-lift") 
+        "if-lift")
    (--> (S (i ...) (in-hole E (delay σ n)))
-        ;; reduces to 
+        ;; reduces to
         (S_prime (σ_2 i ...) (in-hole E σ_1))
         (fresh delay-input delay-delay)
         (where x_delay-input delay-input)
@@ -489,7 +489,7 @@
         "delay")))
 
 (define ->update
-  (reduction-relation 
+  (reduction-relation
    FrTime-Semantics
    #:domain (X S I t)
    (--> (X S () t)
@@ -513,7 +513,7 @@
         (where (⊥ (dyn u σ_1 σ_2) Σ) (get-signal-in-store S σ))
         (where (v (fwd σ_any) Σ_2) (get-signal-in-store S σ_2))
         (where (S_* ()) (del* S Σ))
-        (where (S_prime I_prime σ_3) 
+        (where (S_prime I_prime σ_3)
                (apply-reduction-relation* ->construction (term (S_* I (u (Vs S σ_1))))))
         (where Σ_prime (remove-all (dom S_prime) (dom S)))
         (where S_updated-fwd (set-signal-in-store S_prime σ_2 (v (fwd σ_3) Σ_2)))
