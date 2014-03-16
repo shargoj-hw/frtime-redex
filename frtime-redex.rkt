@@ -240,6 +240,31 @@
    (term (I->Σ (((loc 9) 3) (loc 10) ((loc 4) 1)) ()))
    (term ((loc 4) (loc 10) (loc 9)))))
 
+(define-metafunction FrTime-Semantics
+  del : S Σ -> (S Σ)
+  [(del S Σ) (del* S Σ () ())])
+
+(define-metafunction FrTime-Semantics
+  del* : S Σ S Σ -> (S Σ)
+  [(del* () Σ_in S_acc Σ_acc) (S_acc Σ_acc)]
+  [(del* S_in Σ_in S_acc (σ_acc ...))
+   (del* ((v_rest -> sis_rest) ...) Σ_in S_stored Σ_newacc)
+   (where ((v_1 -> sis_1) (v_rest -> sis_rest) ...) S_in)
+   (where (v_dep s_dep (σ_dep ...)) sis_1)
+   (where (dyn (lambda (v_lambda) e_lambda) σ_any σ_any2) s_dep)
+   ; make sure there's a dyn s in store
+   (where S_stored (set-signal-in-store S_acc v_1 (v_dep s_dep Σ_removed)))
+   (where Σ_removed (remove-all (σ_dep ...) Σ_in))
+   (where Σ_newacc ,(remove-duplicates (term (σ_dep ... σ_acc ...))))]
+  [(del* S_in Σ_in S_acc Σ_acc)
+   (del* ((v_rest -> sis_rest) ...) Σ_in S_stored Σ_acc)
+   (where ((v_1 -> sis_1) (v_rest -> sis_rest) ...) S_in)
+   (where (v_dep s_dep (σ_dep ...)) sis_1)
+   (where (dyn (lambda (v_lambda) e_lambda) σ_any σ_any2) s_dep)
+   ; not a dyn, no additions to Σ_acc
+   (where S_stored (set-signal-in-store S_acc v_1 (v_dep s_dep Σ_removed)))
+   (where Σ_removed (remove-all (σ_dep ...) Σ_in))])
+
 (define ->construction
   (reduction-relation 
    FrTime-Semantics
