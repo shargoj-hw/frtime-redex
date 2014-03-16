@@ -1,4 +1,4 @@
-#lang racket (require redex)
+#lang racket (require redex rackunit)
 
 (define-language FrTime
   ;; Store locations
@@ -63,6 +63,25 @@
   (test-equal (redex-match? FrTime-Semantics S S2) #t)
   (test-equal (redex-match? FrTime-Semantics S S3) #t)
   (test-equal (redex-match? FrTime-Semantics Σ Σ1) #t))
+
+;; δ : p v ... -> v
+;; Primitive application.
+(define-metafunction FrTime
+  δ : p v ... -> v
+  [(δ + n ...) ,(apply + (term (n ...)))]
+  [(δ - n ...) ,(apply - (term (n ...)))]
+  [(δ * n ...) ,(apply * (term (n ...)))]
+  [(δ / n ...) ,(apply / (term (n ...)))]
+  [(δ < n ...) ,(apply < (term (n ...)))]
+  [(δ > n ...) ,(apply > (term (n ...)))]
+  [(δ p v ...) ,(error 'δ "primitive application not supported!")])
+
+(module+ test
+  (test-equal (term (δ + 3 4)) (term 7))
+  (test-exn
+   "Errors on bad values"
+   (lambda (x) #t)
+   (lambda () (term (δ + (lambda (x) x) 9)))))
 
 ;; get-signal-in-store : S v -> sis or #f
 ;; Returns the information in the signal store for given signal v, or
