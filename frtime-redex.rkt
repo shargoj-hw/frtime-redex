@@ -308,6 +308,9 @@
   (test-equal (term (remove-all (1 2 3 4 5) (6)))
               (term (1 2 3 4 5))))
 
+;; del : Remove locations from the given Σ from the dependency tree.
+;; Maintain state of the graph in other places to accommodate for deletion,
+;; and make sure to keep track of dynamic dependencies that can't be deleted yet
 (define-metafunction FrTime-Semantics
   del : S Σ -> (S Σ)
   [(del S Σ) (del* S Σ () ())])
@@ -345,6 +348,9 @@
     (test-equal (term (del ,example-S ,example-Σ))
                 (term (,result-S ,result-Σ)))))
 
+;; get-dyn-deps : When deleting dependencies, we want to retain the 
+;; dependencies from dynamic signals in the accumulator, and
+;; ignore depenencies from other signals.
 (define-metafunction FrTime-Semantics
   get-dyn-deps : sis Σ -> Σ
   [(get-dyn-deps (v (dyn (lambda (x) e) σ_1 σ_2) (σ_dyn ...)) (σ_acc ...))
@@ -362,6 +368,8 @@
   (test-equal (term (get-dyn-deps (true const ((loc my-z))) ()))
               (term ())))
 
+;; del-sis : easier way to abstract a call to remove-all (from within del).
+;; Eliminates the given Σ from the dependency list of the given SIS
 (define-metafunction FrTime-Semantics
   del-sis : sis Σ -> sis
   [(del-sis (v s Σ) Σ_rem) (v s (remove-all Σ Σ_rem))])
@@ -373,6 +381,8 @@
   (test-equal (term (del-sis (true const ()) ((loc my-z) (loc my-abc))))
               (term (true const ()))))
 
+;; externals-at-time : Search through the external signal list X,
+;; pull out signals that triggered at the given t value
 (define-metafunction
   FrTime-Semantics
   externals-at-time : X n -> I
