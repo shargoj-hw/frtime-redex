@@ -313,40 +313,89 @@
 (define-metafunction FrTime-Semantics
   del* : S Σ S Σ -> (S Σ)
   [(del* () Σ_in S_acc Σ_acc) (S_acc Σ_acc)]
-  [(del* S_in Σ_in S_stored (σ_acc ...))
+  [(del* S_in Σ_in S_acc (σ_acc ...))
    (del* ((v_rest -> sis_rest) ...) Σ_in S_stored Σ_newacc)
    (where ((v_1 -> sis_1) (v_rest -> sis_rest) ...) S_in)
    (where S_stored (set-signal-in-store S_acc v_1 (del-sis sis_1 Σ_in)))
-   (where Σ_newacc (determine-Σacc sis_1 Σacc))])
+   (where Σ_newacc (get-dyn-deps sis_1 (σ_acc ...)))])
+
+(module+ test
+  (let ([example-S (term (((loc my-x) -> (true const ((loc my-y))))))]
+        [example-Σ (term ((loc my-y)))]
+        [result-S  (term (((loc my-x) -> (true const ()))))]
+        [result-Σ  (term ())])
+    (test-equal (term (del ,example-S ,example-Σ))
+                (term (,result-S ,result-Σ)))) 
+   (let ([example-S (term (((loc my-x) -> 
+                            (true
+                             (dyn (lambda (x) x) 
+                                  (loc my-a)
+                                  (loc my-b)) 
+                             ((loc my-y))))))]
+        [example-Σ (term ((loc my-y)))]
+        [result-S  (term (((loc my-x) -> 
+                           (true
+                             (dyn (lambda (x) x) 
+                                  (loc my-a)
+                                  (loc my-b)) 
+                             ()))))]
+        [result-Σ  (term ((loc my-y)))])
+    (test-equal (term (del ,example-S ,example-Σ))
+                (term (,result-S ,result-Σ)))))
 
 (define-metafunction FrTime-Semantics
-  determine-Σacc : sis Σ -> Σ
-  [(determine-Σacc (v (dyn (lambda (v) e) σ_1 σ_2) (σ_dyn ...)) (σ_acc ...))
+  get-dyn-deps : sis Σ -> Σ
+  [(get-dyn-deps (v (dyn (lambda (x) e) σ_1 σ_2) (σ_dyn ...)) (σ_acc ...))
    ,(remove-duplicates (term (σ_dyn ... σ_acc ...)))]
-  [(determine-Σacc (v s Σ_sis) Σ_acc) Σ_acc])
+  [(get-dyn-deps (v s Σ_sis) Σ_acc) Σ_acc])
+
+(module+ test
+  (test-equal (term (get-dyn-deps (true
+                                   (dyn (lambda (x) (+ x 3)) 
+                                        (loc my-a) 
+                                        (loc my-b))
+                                        ((loc my-z)))
+                                    ()))
+              (term ((loc my-z))))
+  (test-equal (term (get-dyn-deps (true const ((loc my-z))) ()))
+              (term ())))
 
 (define-metafunction FrTime-Semantics
   del-sis : sis Σ -> sis
   [(del-sis (v s Σ) Σ_rem) (v s (remove-all Σ Σ_rem))])
 
+(module+ test
+  (test-equal (term (del-sis (3 const ((loc my-x) (loc my-y) (loc my-z)))
+                             ((loc my-y)  (loc my-z))))
+              (term (3 const ((loc my-x)))))
+  (test-equal (term (del-sis (true const ()) ((loc my-z) (loc my-abc))))
+              (term (true const ()))))
+
+(define-metafunction
+  FrTime-Semantics
+  externals-at-time : X n -> I
+  [(externals-at-time X n) (externals-at-time* X n ())])
+
 (define-metafunction FrTime-Semantics
   externals-at-time* : X n I -> I
+  [(externals-at-time* () n_time I) I]
   [(externals-at-time* ((σ_1 v_1 n_time) (σ_rest v_rest n_rest) ...) n_time (i ...))
    (externals-at-time* ((σ_rest v_rest n_rest) ...) n_time ((σ_1 v_1) i ...))]
   [(externals-at-time* ((σ_1 v_1 n_1) (σ_rest v_rest n_rest) ...) n_time I)
    (externals-at-time* ((σ_rest v_rest n_rest) ...) n_time I)])
 
-(define-metafunction FrTime-Semantics
-  all-signal-names : S -> (x ...)
-  [(all-signal-names (((loc x) -> sis_any) ...)) (x ...)])
-
 (module+ test
-  (test-equal
-   (term
-    (all-signal-names
-     (((loc a) -> (3 const ()))
-      ((loc b) -> (5 input ((loc c)))))))
-   (term (a b))))
+  (let ([simple-x (term (((loc my-a) true 5)
+                         ((loc my-b) false 7)
+                         ((loc my-c) (lambda (x) x) 5)
+                         ((loc my-d) + 7)
+                         ((loc my-e) ⊥ 6)))]
+        [i-at-seven (term (((loc my-d) +) ((loc my-b) false)))]
+        [i-at-five  (term (((loc my-c) (lambda (x) x)) ((loc my-a) true)))])  
+  (test-equal (term (externals-at-time ,simple-x 5))
+              i-at-five)
+  (test-equal (term (externals-at-time ,simple-x 7))
+              i-at-seven)))
 
 (define ->construction
   (reduction-relation 
