@@ -1,9 +1,11 @@
 #lang racket (require redex rackunit)
 
+(define-syntax quasiquote (make-rename-transformer #'term))
+
 (define-language FrTime
   ;; Store locations
   ;; TODO: is this right?
-  (σ (loc n))
+  (σ (loc x))
 
   ;; Variables
   (x variable-not-otherwise-mentioned)
@@ -28,15 +30,63 @@
      input
      const))
 
+;; Blatently stolen from http://www.ccs.neu.edu/home/matthias/7400-s14/subst.rkt
+;; Thanks!!
+(define-metafunction FrTime
+  subst-n : (x any) ... any -> any
+  [(subst-n (x_1 any_1) (x_2 any_2) ... any_3)
+   (subst x_1 any_1 (subst-n (x_2 any_2) ... any_3))]
+  [(subst-n any_3) 
+   any_3])
+
+;; (subst x e_1 e) replaces all occurrences of 
+;; x in e with e_1 HYGIENICALLY 
+(define-metafunction FrTime
+  subst : x any any -> any 
+  ;; 1. x_1 bound, so don't continue in λ body
+  [(subst x_1 any_1 (lambda (x_2 ... x_1 x_3 ...) any_2))
+   (lambda (x_2 ... x_1 x_3 ...) any_2)]
+  ;; 2. general purpose capture avoiding case
+  [(subst x_1 any_1 (lambda (x_2 ...) any_2))
+   (lambda (x ...) (subst x_1 any_1 (subst-vars* (x_2 x) ... any_2)))
+   (where (x ...) ,(variables-not-in (term (x_1 any_1 any_2)) (term (x_2 ...))))]
+  ;; 3. replace x_1 with e_1
+  [(subst x_1 any_1 x_1) any_1]
+  ;; 4. x_1 and x_2 are different, so don't replace
+  [(subst x_1 any_1 x_2) x_2]
+  ;; the last two cases cover all other expression forms
+  [(subst x_1 any_1 (any_2 ...))
+   ((subst x_1 any_1 any_2) ...)]
+  [(subst x_1 any_1 any_2) any_2])
+
+;; (subst-vars (x_1 e_1) ... e) replaces all occurrences of 
+;; x_1, ... in e with e_1, ... UNCONDITIONALLY 
+(define-metafunction FrTime
+  subst-vars* : (x any) ... any -> any 
+  [(subst-vars* any) 
+   any]
+  [(subst-vars* (x_1 any_1) (x_2 any_2) ... any) 
+   (subst-vars x_1 any_1 (subst-vars* (x_2 any_2) ... any))])
+
+;; (subst-vars x e_1 e) replaces all occurrences of 
+;; x in e with e_1 UNCONDITIONALLY 
+(define-metafunction FrTime
+  subst-vars : x any any -> any 
+  [(subst-vars x_1 any_1 x_1) any_1]
+  [(subst-vars x_1 any_1 (any_2 ...)) ((subst-vars x_1 any_1 any_2) ...)]
+  [(subst-vars x_1 any_1 any_2) any_2]
+  [(subst-vars x_1 any_1 (x_2 any_2) ... any_3) 
+   (subst-vars x_1 any_1 (subst-vars ((x_2 any_2) ... any_3)))])
+
 (module+ test
   (define no-signals
     (term (if (> (+ 3 8) (- 9 2))
 	      ((lambda (a b) (- b a)) 4 5)
 	      true)))
   (define lifted-+
-    (term (+ 3 (loc 0))))
+    (term (+ 3 (loc var0))))
   (define signal-in-if
-    (term ((lambda (n) (if (< n (+ n 5)) true false)) (loc 0))))
+    (term ((lambda (n) (if (< n (+ n 5)) true false)) (loc var0))))
 
   (test-equal (redex-match? FrTime e no-signals) #t)
   (test-equal (redex-match? FrTime e lifted-+) #t)
@@ -61,17 +111,17 @@
 
 (module+ test
   (define S1
-    (term (((loc 0) -> (4 (lift + 3 (loc 4)) ()))
-	   ((loc 4) -> (2 const ((loc 0)))))))
+    (term (((loc var0) -> (4 (lift + 3 (loc var4)) ()))
+	   ((loc var4) -> (2 const ((loc var0)))))))
   (define S2 
-    (term (((loc 4) -> (⊥ const ()))
-	   ((loc 2) -> (94 const ((loc 80))))
-	   ((loc 3) -> (20 input ((loc 20)))))))
+    (term (((loc var4) -> (⊥ const ()))
+	   ((loc var2) -> (94 const ((loc var80))))
+	   ((loc var3) -> (20 input ((loc var20)))))))
   (define S3
-    (term (((loc 4) -> (⊥ const ((loc 9))))
-	   ((loc 2) -> (94 const ((loc 9) (loc 80))))
-	   ((loc 3) -> (20 input ((loc 20)))))))
-  (define Σ1 (term ((loc 0) (loc 3) (loc 9))))
+    (term (((loc var4) -> (⊥ const ((loc var9))))
+	   ((loc var2) -> (94 const ((loc var9) (loc var80))))
+	   ((loc var3) -> (20 input ((loc var20)))))))
+  (define Σ1 (term ((loc var0) (loc var3) (loc var9))))
 
   (test-equal (redex-match? FrTime-Semantics S S1) #t)
   (test-equal (redex-match? FrTime-Semantics S S2) #t)
@@ -108,9 +158,9 @@
   [(get-signal-in-store S v) #f])
 
 (module+ test
-  (test-equal (term (get-signal-in-store ,S1 (loc 4)))
-	      (term (2 const ((loc 0)))))
-  (test-equal (term (get-signal-in-store ,S1 (loc 99)))
+  (test-equal (term (get-signal-in-store ,S1 (loc var4)))
+	      (term (2 const ((loc var0)))))
+  (test-equal (term (get-signal-in-store ,S1 (loc var99)))
 	      (term #f)))
 
 ;; get-signal-in-store : S v sis -> S
@@ -125,13 +175,13 @@
    ((v -> sis) (v_1 -> sis_1) ...)])
 
 (module+ test
-  (test-equal (term (set-signal-in-store ,S1 (loc 0) (309 const ())))
-	      (term (((loc 0) -> (309 const ()))
-		     ((loc 4) -> (2 const ((loc 0)))))))
-  (test-equal (term (set-signal-in-store ,S1 (loc 9) (309 const ())))
-	      (term (((loc 9) -> (309 const ()))
-		     ((loc 0) -> (4 (lift + 3 (loc 4)) ()))
-		     ((loc 4) -> (2 const ((loc 0))))))))
+  (test-equal (term (set-signal-in-store ,S1 (loc var0) (309 const ())))
+	      (term (((loc var0) -> (309 const ()))
+		     ((loc var4) -> (2 const ((loc var0)))))))
+  (test-equal (term (set-signal-in-store ,S1 (loc var9) (309 const ())))
+	      (term (((loc var9) -> (309 const ()))
+		     ((loc var0) -> (4 (lift + 3 (loc var4)) ()))
+		     ((loc var4) -> (2 const ((loc var0))))))))
 
 ;; Vs : S v -> v
 ;; Get the current value of the given sigma
@@ -141,8 +191,8 @@
    (where (v_2 s_any Σ_any) (get-signal-in-store S v))])
 
 (module+ test
-  (test-equal (term (Vs ,S1 (loc 0))) 4)
-  (test-equal (term (Vs ,S1 (loc 4))) 2))
+  (test-equal (term (Vs ,S1 (loc var0))) 4)
+  (test-equal (term (Vs ,S1 (loc var4))) 2))
 
 ;; A : Σ v v -> Σ
 ;; Returns Sigma if the values are equal, or the empty list 
@@ -154,7 +204,7 @@
 
 (module+ test
   (test-equal (term (A ,Σ1 (lambda (x) x) (lambda (x) x))) Σ1)
-  (test-equal (term (A ,Σ1 (lambda (x) x) (loc 5))) (term ())))
+  (test-equal (term (A ,Σ1 (lambda (x) x) (loc var5))) (term ())))
 
 ;; reg : σ Σ S -> S
 ;; Registers the given signal location with each location in Σ in S
@@ -167,7 +217,7 @@
    (where S_updated (set-signal-in-store S σ_prime (v s (σ σ_primeset ...))))])
 
 (module+ test
-  (test-equal (term (reg (loc 9) ((loc 4) (loc 2)) ,S2)) S3))
+  (test-equal (term (reg (loc var9) ((loc var4) (loc var2)) ,S2)) S3))
 
 ;; Ds : S Σ -> Σ
 ;; Returns the set of the union of all dependencies for each σ ∈ Σ
@@ -176,8 +226,8 @@
   [(Ds S Σ) (Ds* S Σ ())])
 
 (module+ test
-  (test-equal (term (Ds ,S2 ((loc 9)))) (term ()))
-  (test-equal (term (Ds ,S2 ((loc 2) (loc 3)))) (term ((loc 20) (loc 80)))))
+  (test-equal (term (Ds ,S2 ((loc var9)))) (term ()))
+  (test-equal (term (Ds ,S2 ((loc var2) (loc var3)))) (term ((loc var20) (loc var80)))))
 
 ;; Helper function for Ds. Accummulates values in the second sigma and
 ;; setifies them once they're all collected.
@@ -199,15 +249,15 @@
 (module+ test
   (define Sdfrd
     (term
-     (((loc 0) -> (1 const ()))
-      ((loc 1) -> (1 const ((loc 0) (loc 2))))
-      ((loc 2) -> (2 const ((loc 3))))
-      ((loc 3) -> (3 const ()))
-      ((loc 4) -> (4 const ())))))
+     (((loc var0) -> (1 const ()))
+      ((loc var1) -> (1 const ((loc var0) (loc var2))))
+      ((loc var2) -> (2 const ((loc var3))))
+      ((loc var3) -> (3 const ()))
+      ((loc var4) -> (4 const ())))))
 
   (test-equal
-   (term (dfrd ,Sdfrd ((loc 1))))
-   (term ((loc 1) (loc 0) (loc 2) (loc 3)))))
+   (term (dfrd ,Sdfrd ((loc var1))))
+   (term ((loc var1) (loc var0) (loc var2) (loc var3)))))
 
 ;; dfrd* : S Σ -> Σ
 ;; Helper method for dfrd
@@ -222,8 +272,8 @@
 
 (module+ test
   (test-equal
-   (term (dfrd* ,Sdfrd ((loc 1))))
-   (term ((loc 1) (loc 0) (loc 2) (loc 3)))))
+   (term (dfrd* ,Sdfrd ((loc var1))))
+   (term ((loc var1) (loc var0) (loc var2) (loc var3)))))
 
 ;; I->Σ : I Σ -> Σ
 ;; Get all of the signal locations out of a set of internal events.
@@ -237,8 +287,8 @@
 
 (module+ test
   (test-equal
-   (term (I->Σ (((loc 9) 3) (loc 10) ((loc 4) 1)) ()))
-   (term ((loc 4) (loc 10) (loc 9)))))
+   (term (I->Σ (((loc var9) 3) (loc var10) ((loc var4) 1)) ()))
+   (term ((loc var4) (loc var10) (loc var9)))))
 
 ;; remove-all : (any ...) (any ...) -> (any ...)
 ;; Removes all of the elements of the second list from the first.
@@ -281,6 +331,18 @@
    ; not a dyn, no additions to Σ_acc
    (where S_stored (set-signal-in-store S_acc v_1 (v_dep s_dep Σ_removed)))
    (where Σ_removed (remove-all (σ_dep ...) Σ_in))])
+
+(define-metafunction FrTime-Semantics
+  all-signal-names : S -> (x ...)
+  [(all-signal-names (((loc x) -> sis_any) ...)) (x ...)])
+
+(module+ test
+  (test-equal
+   (term
+    (all-signal-names
+     (((loc a) -> (3 const ()))
+      ((loc b) -> (5 input ((loc c)))))))
+   (term (a b))))
 
 (define ->construction
   (reduction-relation 
@@ -355,6 +417,31 @@
         (where S_prime (reg σ_2 (σ) S_almostprime))
         "delay")))
 
+(define signal-in-if
+    (term ((lambda (n) (if (< n (+ n 5)) true false)) (loc var0))))
+
+
+#;
+(apply-reduction-relation
+ ->construction
+ (term ((((loc var0) -> (0 input ())))
+	()
+	,signal-in-if)))
+#;
+(apply-reduction-relation
+ ->construction
+ (term
+  ((((loc var0) -> (0 input ())))
+   ()
+   (if (< (loc var0) (+ (loc var0) 5))
+       true
+       false))))
+
+#;
+(((((loc var0) -> (0 input ())))
+  ()
+  (subst-n (n (loc var0)) (if (< n (+ n 5)) true false))))
+
 (define ->update
   (reduction-relation 
     FrTime-Semantics
@@ -415,5 +502,5 @@
          (where (σ_a ...) (A Σ v_0 v))
          (where I_prime (σ_a ... i_fst ... i_rst ...))
          "u-lift")))
-    
+
 (module+ test (test-results))
