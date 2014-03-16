@@ -318,19 +318,25 @@
   [(del* S_in Σ_in S_stored (σ_acc ...))
    (del* ((v_rest -> sis_rest) ...) Σ_in S_stored Σ_newacc)
    (where ((v_1 -> sis_1) (v_rest -> sis_rest) ...) S_in)
-   (where (v_dep s_dep (σ_dep ...)) sis_1)
-   (where (dyn (lambda (v_lambda) e_lambda) σ_any σ_any2) s_dep)
-   ; make sure there's a dyn s in store
-   (where S_stored (set-signal-in-store S_acc v_1 (v_dep s_dep Σ_removed)))
-   (where Σ_removed (remove-all (σ_dep ...) Σ_in))
-   (where Σ_newacc ,(remove-duplicates (term (σ_dep ... σ_acc ...))))]
-  [(del* S_in Σ_in S_acc Σ_acc)
-   (del* ((v_rest -> sis_rest) ...) Σ_in S_stored Σ_acc)
-   (where ((v_1 -> sis_1) (v_rest -> sis_rest) ...) S_in)
-   (where (v_dep s_dep (σ_dep ...)) sis_1)
-   ; not a dyn, no additions to Σ_acc
-   (where S_stored (set-signal-in-store S_acc v_1 (v_dep s_dep Σ_removed)))
-   (where Σ_removed (remove-all (σ_dep ...) Σ_in))])
+   (where S_stored (set-signal-in-store S_acc v_1 (del-sis sis_1 Σ_in)))
+   (where Σ_newacc (determine-Σacc sis_1 Σacc))])
+
+(define-metafunction FrTime-Semantics
+  determine-Σacc : sis Σ -> Σ
+  [(determine-Σacc (v (dyn (lambda (v) e) σ_1 σ_2) (σ_dyn ...)) (σ_acc ...))
+   ,(remove-duplicates (term (σ_dyn ... σ_acc ...)))]
+  [(determine-Σacc (v s Σ_sis) Σ_acc) Σ_acc])
+
+(define-metafunction FrTime-Semantics
+  del-sis : sis Σ -> sis
+  [(del-sis (v s Σ) Σ_rem) (v s (remove-all Σ Σ_rem))])
+
+(define-metafunction FrTime-Semantics
+  externals-at-time* : X n I -> I
+  [(externals-at-time* ((σ_1 v_1 n_time) (σ_rest v_rest n_rest) ...) n_time (i ...))
+   (externals-at-time* ((σ_rest v_rest n_rest) ...) n_time ((σ_1 v_1) i ...))]
+  [(externals-at-time* ((σ_1 v_1 n_1) (σ_rest v_rest n_rest) ...) n_time I)
+   (externals-at-time* ((σ_rest v_rest n_rest) ...) n_time I)])
 
 (define-metafunction FrTime-Semantics
   all-signal-names : S -> (x ...)
@@ -468,7 +474,7 @@
          (where (v (fwd σ_any) Σ_2) (get-signal-in-store S σ_2))
          (where (S_* ()) (del* S Σ))
          (where (S_prime I_prime σ_3) 
-                (DO-SOME-WEIRD-ARROW-MAGIC S_* I (u (Vs S σ_1))))
+                (apply-reduction-relation* ->construction (term (S_* I (u (Vs S σ_1))))))
          (where Σ_prime (remove-all (dom S_prime) (dom S)))
          (where S_updated-fwd (set-signal-in-store S_prime σ_2 (v (fwd σ_3) Σ_2)))
          (where S_updated-dyn (set-signal-in-store S_updated-fwd σ (⊥ (dyn u σ_1 σ_2) Σ_prime)))
