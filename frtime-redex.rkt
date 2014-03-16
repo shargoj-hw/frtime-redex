@@ -49,9 +49,24 @@
   (define S1
     (term (((loc 0) -> (4 (lift + 3 (loc 4)) ()))
 	   ((loc 4) -> (2 const ((loc 0)))))))
+  (define S2 
+    (term (((loc 4) -> (⊥ const ()))
+	   ((loc 2) -> (94 const ((loc 80))))
+	   ((loc 3) -> (20 input ((loc 20)))))))
+  (define S3
+    (term (((loc 4) -> (⊥ const ((loc 9))))
+	   ((loc 2) -> (94 const ((loc 9) (loc 80))))
+	   ((loc 3) -> (20 input ((loc 20)))))))
+  (define Σ1 (term ((loc 0) (loc 3) (loc 9))))
 
-  (test-equal (redex-match? FrTime-Semantics S S1) #t))
+  (test-equal (redex-match? FrTime-Semantics S S1) #t)
+  (test-equal (redex-match? FrTime-Semantics S S2) #t)
+  (test-equal (redex-match? FrTime-Semantics S S3) #t)
+  (test-equal (redex-match? FrTime-Semantics Σ Σ1) #t))
 
+;; get-signal-in-store : S v -> sis or #f
+;; Returns the information in the signal store for given signal v, or
+;; #f is no such signal is found
 (define-metafunction FrTime-Semantics
   get-signal-in-store : S v -> sis or #f
   [(get-signal-in-store ((v_1 -> sis_1) ... (v -> sis) (v_2 -> sis_2) ...) v)
@@ -65,6 +80,9 @@
   (test-equal (term (get-signal-in-store ,S1 (loc 99)))
 	      (term #f)))
 
+;; get-signal-in-store : S v sis -> S
+;; Updates or adds the signal v in the given store with the given
+;; value, returning the updated store
 (define-metafunction FrTime-Semantics
   set-signal-in-store : S v sis -> S
   [(set-signal-in-store ((v_1 -> sis_1) ... (v -> sis_old) (v_2 -> sis_2) ...) v sis)
@@ -82,6 +100,8 @@
 		     ((loc 0) -> (4 (lift + 3 (loc 4)) ()))
 		     ((loc 4) -> (2 const ((loc 0))))))))
 
+;; Vs : S v -> v
+;; Get the current value of the given sigma
 (define-metafunction FrTime-Semantics
   Vs : S v -> v
   [(Vs S v) v_2
@@ -91,18 +111,20 @@
   (test-equal (term (Vs ,S1 (loc 0))) 4)
   (test-equal (term (Vs ,S1 (loc 4))) 2))
 
+;; A : Σ v v -> Σ
+;; Returns Sigma if the values are equal, or the empty list 
+;; otherwise
 (define-metafunction FrTime-Semantics
   A : Σ v v -> Σ
   [(A Σ v v) Σ]
   [(A Σ v v_other) ()])
 
 (module+ test
-  (define Σ1 (term ((loc 0) (loc 3) (loc 9))))
-
-  (test-equal (redex-match? FrTime-Semantics Σ Σ1) #t)
   (test-equal (term (A ,Σ1 (lambda (x) x) (lambda (x) x))) Σ1)
   (test-equal (term (A ,Σ1 (lambda (x) x) (loc 5))) (term ())))
 
+;; reg : σ Σ S -> S
+;; Registers the given signal location with each location in Σ in S
 (define-metafunction FrTime-Semantics
   reg : σ Σ S -> S
   [(reg σ () S) S]
@@ -111,17 +133,28 @@
    (where (v s (σ_primeset ...)) (get-signal-in-store S σ_prime))
    (where S_updated (set-signal-in-store S σ_prime (v s (σ σ_primeset ...))))])
 
+(module+ test
+  (test-equal (term (reg (loc 9) ((loc 4) (loc 2)) ,S2)) S3))
+
+;; Ds : S Σ -> Σ
+;; Returns the set of the union of all dependencies for each σ ∈ Σ
 (define-metafunction FrTime-Semantics
   Ds : S Σ -> Σ
   [(Ds S Σ) (Ds* S Σ ())])
 
+(module+ test
+  (test-equal (term (Ds ,S2 ((loc 9)))) (term ()))
+  (test-equal (term (Ds ,S2 ((loc 2) (loc 3)))) (term ((loc 20) (loc 80)))))
+
+;; Helper function for Ds. Accummulates values in the second sigma and
+;; setifies them once they're all collected.
 (define-metafunction FrTime-Semantics
   Ds* : S Σ Σ -> Σ
   [(Ds* S () Σ) ,(remove-duplicates (term Σ))]
   [(Ds* S (σ_first σ_rest ...) (σ_acc ...))
    (Ds* S (σ_rest ...) (σ_first-in-store ... σ_acc ...))
-   (where (σ_any s_any (σ_first-in-store ...)) (get-signal-in-store S σ_first))])
-
+   (where (v_any s_any (σ_first-in-store ...)) (get-signal-in-store S σ_first))]
+  [(Ds* S (σ_first σ_rest ...) Σ) (Ds* S (σ_rest ...) Σ)])
 
 (define ->construction
   (reduction-relation 
