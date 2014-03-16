@@ -281,6 +281,13 @@
   del-sis : sis Σ -> sis
   [(del-sis (v s Σ) Σ_rem) (v s (remove-all Σ Σ_rem))])
 
+(define-metafunction FrTime-Semantics
+  externals-at-time* : X n I -> I
+  [(externals-at-time* ((σ_1 v_1 n_time) (σ_rest v_rest n_rest) ...) n_time (i ...))
+   (externals-at-time* ((σ_rest v_rest n_rest) ...) n_time ((σ_1 v_1) i ...))]
+  [(externals-at-time* ((σ_1 v_1 n_1) (σ_rest v_rest n_rest) ...) n_time I)
+   (externals-at-time* ((σ_rest v_rest n_rest) ...) n_time I)])
+
 (define ->construction
   (reduction-relation 
    FrTime-Semantics
@@ -380,7 +387,7 @@
          (where (v (fwd σ_any) Σ_2) (get-signal-in-store S σ_2))
          (where (S_* ()) (del* S Σ))
          (where (S_prime I_prime σ_3) 
-                (DO-SOME-WEIRD-ARROW-MAGIC S_* I (u (Vs S σ_1))))
+                (apply-reduction-relation* ->construction (term (S_* I (u (Vs S σ_1))))))
          (where Σ_prime (remove-all (dom S_prime) (dom S)))
          (where S_updated-fwd (set-signal-in-store S_prime σ_2 (v (fwd σ_3) Σ_2)))
          (where S_updated-dyn (set-signal-in-store S_updated-fwd σ (⊥ (dyn u σ_1 σ_2) Σ_prime)))
