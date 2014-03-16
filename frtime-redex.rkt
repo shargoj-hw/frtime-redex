@@ -189,6 +189,75 @@
    (where (v_any s_any (σ_first-in-store ...)) (get-signal-in-store S σ_first))]
   [(Ds* S (σ_first σ_rest ...) Σ) (Ds* S (σ_rest ...) Σ)])
 
+;; dfrd : S I -> Σ
+;; Returns the set of all signal locations that are transitively
+;; dependant on the signal locations in I
+(define-metafunction FrTime-Semantics
+  dfrd : S I -> Σ
+  [(dfrd S I) (dfrd* S (I->Σ I ()))])
+
+(module+ test
+  (define Sdfrd
+    (term
+     (((loc 0) -> (1 const ()))
+      ((loc 1) -> (1 const ((loc 0) (loc 2))))
+      ((loc 2) -> (2 const ((loc 3))))
+      ((loc 3) -> (3 const ()))
+      ((loc 4) -> (4 const ())))))
+
+  (test-equal
+   (term (dfrd ,Sdfrd ((loc 1))))
+   (term ((loc 1) (loc 0) (loc 2) (loc 3)))))
+
+;; dfrd* : S Σ -> Σ
+;; Helper method for dfrd
+(define-metafunction FrTime-Semantics
+  dfrd* : S Σ -> Σ
+  [(dfrd* S (σ ...))
+   (dfrd* S Σ)
+   (where (σ_Ds ...) (Ds S (σ ...)))
+   (where Σ ,(remove-duplicates (term (σ ... σ_Ds ...))))
+   (side-condition (not (equal? (term (σ ...)) (term Σ))))]
+  [(dfrd* S Σ) Σ])
+
+(module+ test
+  (test-equal
+   (term (dfrd* ,Sdfrd ((loc 1))))
+   (term ((loc 1) (loc 0) (loc 2) (loc 3)))))
+
+;; I->Σ : I Σ -> Σ
+;; Get all of the signal locations out of a set of internal events.
+(define-metafunction FrTime-Semantics
+  I->Σ : I Σ -> Σ
+  [(I->Σ () Σ) Σ]
+  [(I->Σ (σ_first i ...) (σ_acc ...))
+   (I->Σ (i ...) (σ_first σ_acc ...))]
+  [(I->Σ ((σ_first v) i ...) (σ_acc ...))
+   (I->Σ (i ...) (σ_first σ_acc ...))])
+
+(module+ test
+  (test-equal
+   (term (I->Σ (((loc 9) 3) (loc 10) ((loc 4) 1)) ()))
+   (term ((loc 4) (loc 10) (loc 9)))))
+
+;; remove-all : (any ...) (any ...) -> (any ...)
+;; Removes all of the elements of the second list from the first.
+(define-metafunction FrTime-Semantics
+  remove-all : (any ...) (any ...) -> (any ...)
+  [(remove-all (any ...) ()) (any ...)]
+  [(remove-all (any_begin ... any any_end ...) (any any_rest ...))
+   (remove-all (any_begin ... any_end ...) (any any_rest ...))]
+  [(remove-all (any ...) (any_rem any_rest ...))
+   (remove-all (any ...) (any_rest ...))
+   (side-condition (not (member (term any_rem) (term (any ...)))))])
+
+(module+ test
+  (test-equal 
+   (term (remove-all (1 2 4 5 4 5) (1 4))) 
+   (term (2 5 5)))
+  (test-equal (term (remove-all (1 2 3 4 5) (6)))
+	      (term (1 2 3 4 5))))
+
 (define-metafunction FrTime-Semantics
   del : S Σ -> (S Σ)
   [(del S Σ) (del* S Σ () ())])
@@ -196,7 +265,7 @@
 (define-metafunction FrTime-Semantics
   del* : S Σ S Σ -> (S Σ)
   [(del* () Σ_in S_acc Σ_acc) (S_acc Σ_acc)]
-  [(del* S_in Σ_in S_acc (σ_acc ...))
+  [(del* S_in Σ_in S_stored (σ_acc ...))
    (del* ((v_rest -> sis_rest) ...) Σ_in S_stored Σ_newacc)
    (where ((v_1 -> sis_1) (v_rest -> sis_rest) ...) S_in)
    (where S_stored (set-signal-in-store S_acc v_1 (del-sis sis_1 Σ_in)))
@@ -221,7 +290,7 @@
         (S I (in-hole E v_applied)) 
         (side-condition (andmap (lambda (x) (not (redex-match? FrTime σ x)))
                                 (term (v ...))))
-        (where v_applied (DELTA p v ...))
+        (where v_applied (δ p v ...))
         "primitive-application")
    (--> (S (i ...) (in-hole E (p v ...))) 
         ;; reduces to
