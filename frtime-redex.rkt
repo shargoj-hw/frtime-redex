@@ -199,20 +199,18 @@
   [(del* S_in Σ_in S_acc (σ_acc ...))
    (del* ((v_rest -> sis_rest) ...) Σ_in S_stored Σ_newacc)
    (where ((v_1 -> sis_1) (v_rest -> sis_rest) ...) S_in)
-   (where (v_dep s_dep (σ_dep ...)) sis_1)
-   (where (dyn (lambda (v_lambda) e_lambda) σ_any σ_any2) s_dep)
-   ; make sure there's a dyn s in store
-   (where S_stored (set-signal-in-store S_acc v_1 (v_dep s_dep Σ_removed)))
-   (where Σ_removed (remove-all (σ_dep ...) Σ_in))
-   (where Σ_newacc ,(remove-duplicates (term (σ_dep ... σ_acc ...))))]
-  [(del* S_in Σ_in S_acc Σ_acc)
-   (del* ((v_rest -> sis_rest) ...) Σ_in S_stored Σ_acc)
-   (where ((v_1 -> sis_1) (v_rest -> sis_rest) ...) S_in)
-   (where (v_dep s_dep (σ_dep ...)) sis_1)
-   (where (dyn (lambda (v_lambda) e_lambda) σ_any σ_any2) s_dep)
-   ; not a dyn, no additions to Σ_acc
-   (where S_stored (set-signal-in-store S_acc v_1 (v_dep s_dep Σ_removed)))
-   (where Σ_removed (remove-all (σ_dep ...) Σ_in))])
+   (where S_stored (set-signal-in-store S_acc v_1 (del-sis sis_1 Σ_in)))
+   (where Σ_newacc (determine-Σacc sis_1 Σacc))])
+
+(define-metafunction FrTime-Semantics
+  determine-Σacc : sis Σ -> Σ
+  [(determine-Σacc (v (dyn (lambda (v) e) σ_1 σ_2) (σ_dyn ...)) (σ_acc ...))
+   ,(remove-duplicates (term (σ_dyn ... σ_acc ...)))]
+  [(determine-Σacc (v s Σ_sis) Σ_acc) Σ_acc])
+
+(define-metafunction FrTime-Semantics
+  del-sis : sis Σ -> sis
+  [(del-sis (v s Σ) Σ_rem) (v s (remove-all Σ Σ_rem))])
 
 (define ->construction
   (reduction-relation 
