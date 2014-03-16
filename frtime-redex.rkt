@@ -28,6 +28,20 @@
      input
      const))
 
+(module+ test
+  (define no-signals
+    (term (if (> (+ 3 8) (- 9 2))
+	      ((lambda (a b) (- b a)) 4 5)
+	      true)))
+  (define lifted-+
+    (term (+ 3 (loc 0))))
+  (define signal-in-if
+    (term ((lambda (n) (if (< n (+ n 5)) true false)) (loc 0))))
+
+  (test-equal (redex-match? FrTime e no-signals) #t)
+  (test-equal (redex-match? FrTime e lifted-+) #t)
+  (test-equal (redex-match? FrTime e signal-in-if) #t))
+
 (define-extended-language FrTime-Semantics FrTime
   (Σ ::= 
      (σ ...))
