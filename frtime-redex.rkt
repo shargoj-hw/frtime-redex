@@ -368,7 +368,10 @@
                ,(filter (lambda (x) (redex-match? FrTime σ x))
                         (term (v ...))))
         (side-condition (not (empty? (term σ_args))))
-        (where S_prime 
+	(where (x ...) (all-signal-names S))
+	(where x_new (fresh x ...))
+	(where σ (loc x_new))
+        (where S_prime
                (reg σ 
                     (σ_arg ...)
                     (set-signal-in-store S σ (⊥ (lift p v ...) ()))))
@@ -425,28 +428,6 @@
 
 (define signal-in-if
     (term ((lambda (n) (if (< n (+ n 5)) true false)) (loc var0))))
-
-
-#;
-(apply-reduction-relation
- ->construction
- (term ((((loc var0) -> (0 input ())))
-	()
-	,signal-in-if)))
-#;
-(apply-reduction-relation
- ->construction
- (term
-  ((((loc var0) -> (0 input ())))
-   ()
-   (if (< (loc var0) (+ (loc var0) 5))
-       true
-       false))))
-
-#;
-(((((loc var0) -> (0 input ())))
-  ()
-  (subst-n (n (loc var0)) (if (< n (+ n 5)) true false))))
 
 (define ->update
   (reduction-relation 
