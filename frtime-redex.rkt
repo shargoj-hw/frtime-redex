@@ -1,7 +1,5 @@
 #lang racket (require redex rackunit)
 
-(define-syntax quasiquote (make-rename-transformer #'term))
-
 (define-language FrTime
   ;; Store locations
   ;; TODO: is this right?
@@ -29,6 +27,20 @@
      (fwd σ)
      input
      const))
+
+(module+ test
+  (define no-signals
+    (term (if (> (+ 3 8) (- 9 2))
+	      ((lambda (a b) (- b a)) 4 5)
+	      true)))
+  (define lifted-+
+    (term (+ 3 (loc var0))))
+  (define signal-in-if
+    (term ((lambda (n) (if (< n (+ n 5)) true false)) (loc seconds))))
+
+  (test-equal (redex-match? FrTime e no-signals) #t)
+  (test-equal (redex-match? FrTime e lifted-+) #t)
+  (test-equal (redex-match? FrTime e signal-in-if) #t))
 
 ;; Blatently stolen from http://www.ccs.neu.edu/home/matthias/7400-s14/subst.rkt
 ;; Thanks!!
@@ -77,20 +89,6 @@
   [(subst-vars x_1 any_1 any_2) any_2]
   [(subst-vars x_1 any_1 (x_2 any_2) ... any_3) 
    (subst-vars x_1 any_1 (subst-vars ((x_2 any_2) ... any_3)))])
-
-(module+ test
-  (define no-signals
-    (term (if (> (+ 3 8) (- 9 2))
-	      ((lambda (a b) (- b a)) 4 5)
-	      true)))
-  (define lifted-+
-    (term (+ 3 (loc var0))))
-  (define signal-in-if
-    (term ((lambda (n) (if (< n (+ n 5)) true false)) (loc seconds))))
-
-  (test-equal (redex-match? FrTime e no-signals) #t)
-  (test-equal (redex-match? FrTime e lifted-+) #t)
-  (test-equal (redex-match? FrTime e signal-in-if) #t))
 
 (define-extended-language FrTime-Semantics FrTime
   (Σ ::= 
