@@ -313,13 +313,19 @@
 ;; and make sure to keep track of dynamic dependencies that can't be deleted yet
 (define-metafunction FrTime-Semantics
   del : S Σ -> (S Σ)
-  [(del S Σ) (del* S Σ () ())])
+  [(del S Σ) (del-accum S Σ () ())])
 
 (define-metafunction FrTime-Semantics
-  del* : S Σ S Σ -> (S Σ)
-  [(del* () Σ_in S_acc Σ_acc) (S_acc Σ_acc)]
-  [(del* S_in Σ_in S_acc (σ_acc ...))
-   (del* ((v_rest -> sis_rest) ...) Σ_in S_stored Σ_newacc)
+  del* : S Σ -> (S Σ)
+  [(del* S ()) (S ())]
+  [(del* S Σ) (del* S_1 Σ_1)
+   (where (S_1 Σ_1) (del S Σ))])
+
+(define-metafunction FrTime-Semantics
+  del-accum : S Σ S Σ -> (S Σ)
+  [(del-accum () Σ_in S_acc Σ_acc) (S_acc Σ_acc)]
+  [(del-accum S_in Σ_in S_acc (σ_acc ...))
+   (del-accum ((v_rest -> sis_rest) ...) Σ_in S_stored Σ_newacc)
    (where ((v_1 -> sis_1) (v_rest -> sis_rest) ...) S_in)
    (where S_stored (set-signal-in-store S_acc v_1 (del-sis sis_1 Σ_in)))
    (where Σ_newacc (get-dyn-deps sis_1 (σ_acc ...)))])
@@ -329,7 +335,7 @@
         [example-Σ (term ((loc my-y)))]
         [result-S  (term (((loc my-x) -> (true const ()))))]
         [result-Σ  (term ())])
-    (test-equal (term (del ,example-S ,example-Σ))
+    (test-equal (term (del* ,example-S ,example-Σ))
                 (term (,result-S ,result-Σ))))
   (let ([example-S (term (((loc my-x) ->
                            (true
@@ -545,23 +551,28 @@
    (--> ((xs ...) S (i_fst ... σ i_rst ...) t)
         ;; reduces to
         (X_prime S I_prime t)
+        (where (⊥ (delay σ n σ_1) Σ) (get-signal-in-store S σ))
         (where X_prime ((σ_1 (Vs S σ) ,(+ (term t) (term n))) xs ...))
         (where I_prime (i_fst ... i_rst ...))
-        (where (⊥ (delay σ n σ_1) Σ) (get-signal-in-store S σ))
         "u-delay")
    (--> (X S I t)
         ;; reduces to
         (X S_prime I_prime t)
         (where (i_fst ... σ i_rst ...) I)
+	(where any_1 ,(displayln (term σ)))
+	(where any_flksnd ,(displayln (term (dfrd S I))))
         (side-condition (not (member (term σ) (term (dfrd S I)))))
         (where (v_0 (lift p v_1 ...) Σ) (get-signal-in-store S σ))
+	(where any_2 ,(displayln (term (v_0 (lift p v_1 ...) Σ))))
         (where v (δ p (Vs v_1) ...))
+	(where any_3 ,(displayln (term v)))
         (where S_prime (set-signal-in-store S σ (v (lift p v_1 ...) Σ)))
+	(where any_4 ,(displayln (term S_prime)))
         (where (σ_a ...) (A Σ v_0 v))
+	(where any_5 ,(displayln (term (σ_a ...))))
         (where I_prime (σ_a ... i_fst ... i_rst ...))
         "u-lift")))
 
-#|
 (define signal-in-if
   (term ((lambda (n) (if (< n (+ n 5)) true false)) (loc seconds))))
 
@@ -586,32 +597,41 @@
 	 ((loc if-dyn) (loc lifted-prim1) (loc lifted-prim))
 	 0)))
 
+(define if-stmt-term-dyn
+  (term (()
+	 (((loc if-dyn) -> (⊥ (dyn (lambda (x) (if x true false)) (loc lifted-prim1) (loc if-fwd)) ()))
+	  ((loc if-fwd) -> (⊥ (fwd (loc ⊥)) ()))
+	  ((loc lifted-prim1) -> (⊥ (lift < (loc seconds) (loc lifted-prim)) ((loc if-dyn))))
+	  ((loc lifted-prim) -> (⊥ (lift + (loc seconds) 5) ((loc lifted-prim1))))
+	  ((loc seconds) -> (0 input ((loc lifted-prim1) (loc lifted-prim))))
+	  ((loc key) -> (⊥ input ())))
+	 ((loc if-dyn))
+	 0)))
+
+(define if-stmt-term-prim1
+  (term (()
+	 (((loc if-dyn) -> (⊥ (dyn (lambda (x) (if x true false)) (loc lifted-prim1) (loc if-fwd)) ()))
+	  ((loc if-fwd) -> (⊥ (fwd (loc ⊥)) ()))
+	  ((loc lifted-prim1) -> (⊥ (lift < (loc seconds) (loc lifted-prim)) ((loc if-dyn))))
+	  ((loc lifted-prim) -> (⊥ (lift + (loc seconds) 5) ((loc lifted-prim1))))
+	  ((loc seconds) -> (0 input ((loc lifted-prim1) (loc lifted-prim))))
+	  ((loc key) -> (⊥ input ())))
+	 ((loc lifted-prim1))
+	 0)))
+
+(define if-stmt-term-prim
+  (term (()
+	 (((loc if-dyn) -> (⊥ (dyn (lambda (x) (if x true false)) (loc lifted-prim1) (loc if-fwd)) ()))
+	  ((loc if-fwd) -> (⊥ (fwd (loc ⊥)) ()))
+	  ((loc lifted-prim1) -> (⊥ (lift < (loc seconds) (loc lifted-prim)) ((loc if-dyn))))
+	  ((loc lifted-prim) -> (⊥ (lift + (loc seconds) 5) ((loc lifted-prim1))))
+	  ((loc seconds) -> (0 input ((loc lifted-prim1) (loc lifted-prim))))
+	  ((loc key) -> (⊥ input ())))
+	 ((loc lifted-prim))
+	 0)))
+
 (apply-reduction-relation
  ->update
- if-stmt-term)
+ if-stmt-term-prim)
 
-(((((loc if-dyn)
-     ->
-     (⊥
-      (dyn (lambda (x) (if x true false)) (loc lifted-prim1) (loc if-fwd))
-      ()))
-    ((loc if-fwd) -> (⊥ (fwd (loc ⊥)) ()))
-    ((loc lifted-prim1)
-     ->
-     (⊥ (lift < (loc seconds) (loc lifted-prim)) ((loc if-dyn))))
-    ((loc lifted-prim) -> (⊥ (lift + (loc seconds) 5) ((loc lifted-prim1))))
-    ((loc seconds) -> (0 input ((loc lifted-prim1) (loc lifted-prim))))
-    ((loc key) -> (⊥ input ())))
-   ((loc if-dyn) (loc lifted-prim1) (loc lifted-prim))
-   (loc if-fwd)))
-
-del*:
-(del* (((loc if-dyn) -> (⊥ (dyn (lambda (x) (if x true false)) (loc lifted-prim1) (loc if-fwd)) ()))
-       ((loc if-fwd) -> (⊥ (fwd (loc ⊥)) ()))
-       ((loc lifted-prim1) -> (⊥ (lift < (loc seconds) (loc lifted-prim)) ((loc if-dyn))))
-       ((loc lifted-prim) -> (⊥ (lift + (loc seconds) 5) ((loc lifted-prim1))))
-       ((loc seconds) -> (0 input ((loc lifted-prim1) (loc lifted-prim))))
-       ((loc key) -> (⊥ input ())))
-      ())
-|#
 (module+ test (test-results))
