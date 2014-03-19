@@ -605,15 +605,13 @@
 
 (module+ test
   ;; u-shift
-  (test-equal
-   (apply-reduction-relation
-    ->update 
-    (term ((((loc a) false 1)) (((loc a) -> (true const ()))) () 0)))
-   (term  (((((loc a) false 1)) (((loc a) -> (true const ()))) (((loc a) false)) 1))))
-  (test-equal
-   (apply-reduction-relation
-    ->update 
-    (term ((((loc a) false 2)) (((loc a) -> (true const ()))) () 0)))
-   (term  (((((loc a) false 2)) (((loc a) -> (true const ()))) () 1)))))
+  (test-->
+   ->update 
+   (term ((((loc a) false 1)) (((loc a) -> (true const ()))) () 0))
+   (term ((((loc a) false 1)) (((loc a) -> (true const ()))) (((loc a) false)) 1)))
+  (test-->
+   ->update 
+   (term ((((loc a) false 2)) (((loc a) -> (true const ()))) () 0))
+   (term ((((loc a) false 2)) (((loc a) -> (true const ()))) () 1))))
 
 (module+ test (test-results))
