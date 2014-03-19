@@ -418,6 +418,17 @@
     (test-equal (term (externals-at-time ,simple-x 7))
                 i-at-seven)))
 
+(define-metafunction FrTime-Semantics
+  signalify : (S I v) x -> (S I σ)
+  [(signalify (S I σ) x) (S I σ)]
+  [(signalify (S I v) x) (S_prime I σ)
+   (where σ (loc x))
+   (where S_prime (set-signal-in-store S σ (v const ())))])
+
+(define-metafunction FrTime-Semantics
+  dom : S -> Σ
+  [(dom ((σ -> sis) ...)) (σ ...)])
+
 (define ->construction
   (reduction-relation
    FrTime-Semantics
@@ -534,9 +545,13 @@
         (where (⊥ (dyn u σ_1 σ_2) Σ) (get-signal-in-store S σ))
         (where (v (fwd σ_any) Σ_2) (get-signal-in-store S σ_2))
         (where (S_* ()) (del* S Σ))
+	(fresh new-const)
+	(where x_new-const new-const)
         (where (S_prime I_prime σ_3)
-               (apply-reduction-relation* ->construction (term (S_* I (u (Vs S σ_1))))))
-        (where Σ_prime (remove-all (dom S_prime) (dom S)))
+               (signalify 
+		,(first
+		  (apply-reduction-relation* ->construction (term (S_* I (u (Vs S σ_1))))))
+		x_new-const))
         (where S_updated-fwd (set-signal-in-store S_prime σ_2 (v (fwd σ_3) Σ_2)))
         (where S_updated-dyn (set-signal-in-store S_updated-fwd σ (⊥ (dyn u σ_1 σ_2) Σ_prime)))
         (where S_1 (reg σ_2 (σ_3) S_updated-dyn))
@@ -562,17 +577,11 @@
         ;; reduces to
         (X S_prime I_prime t)
         (where (i_fst ... σ i_rst ...) I)
-	(where any_1 ,(displayln (term σ)))
-	(where any_flksnd ,(displayln (term (dfrd S I))))
         (side-condition (not (member (term σ) (term (dfrd S I)))))
         (where (v_0 (lift p v_1 ...) Σ) (get-signal-in-store S σ))
-	(where any_2 ,(displayln (term (v_0 (lift p v_1 ...) Σ))))
-        (where v (δ p (Vs v_1) ...))
-	(where any_3 ,(displayln (term v)))
+        (where v (δ p (Vs S v_1) ...))
         (where S_prime (set-signal-in-store S σ (v (lift p v_1 ...) Σ)))
-	(where any_4 ,(displayln (term S_prime)))
         (where (σ_a ...) (A Σ v_0 v))
-	(where any_5 ,(displayln (term (σ_a ...))))
         (where I_prime (σ_a ... i_fst ... i_rst ...))
         "u-lift")))
 
@@ -585,6 +594,7 @@
 	 ()
 	 ,t)))
 
+#;
 (apply-reduction-relation*
  ->construction
  (make-initial-context signal-in-if))
