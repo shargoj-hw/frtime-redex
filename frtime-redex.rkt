@@ -430,6 +430,14 @@
   dom : S -> Σ
   [(dom ((σ -> sis) ...)) (σ ...)])
 
+(define-metafunction FrTime-Semantics
+  more-events? : X t -> #t or #f
+  [(more-events? () t) #f]
+  [(more-events? ((σ v t_event) (σ_rest v_rest t_rest) ...) t_time) #t
+   (side-condition (>= (term t_event) (term t_time)))]
+  [(more-events? ((σ v t_event) (σ_rest v_rest t_rest) ...) t_time)
+   (more-events? ((σ_rest v_rest t_rest) ...) t_time)])
+
 (define ->construction
   (reduction-relation
    FrTime-Semantics
@@ -529,6 +537,7 @@
         ;; reduces to
         (X S I_prime ,(+ (term t) 1))
         (where I_prime (externals-at-time X ,(+ (term t) 1)))
+	(side-condition (term (more-events? X t)))
         "u-shift")
    (--> (X S (i_fst ... σ i_rst ...) t)
         ;; reduces to
