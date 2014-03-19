@@ -248,7 +248,18 @@
 ;; dependant on the signal locations in I
 (define-metafunction FrTime-Semantics
   dfrd : S I -> Σ
-  [(dfrd S I) (dfrd* S (I->Σ I ()))])
+  [(dfrd S I) (dfrd* S (Ds S (I->Σ I ())))])
+
+;; dfrd* : S Σ -> Σ
+;; Helper method for dfrd
+(define-metafunction FrTime-Semantics
+  dfrd* : S Σ -> Σ
+  [(dfrd* S (σ ...) ())
+   (dfrd* S Σ)
+   (where (σ_Ds ...) (Ds S (σ ...)))
+   (where Σ ,(remove-duplicates (term (σ ... σ_Ds ...))))
+   (side-condition (not (equal? (term (σ ...)) (term Σ))))]
+  [(dfrd* S Σ) Σ])
 
 (module+ test
   (define Sdfrd
@@ -260,21 +271,9 @@
       ((loc var4) -> (4 const ())))))
 
   (test-equal
-   (term (dfrd ,Sdfrd ((loc var1))))
-   (term ((loc var1) (loc var0) (loc var2) (loc var3)))))
-
-;; dfrd* : S Σ -> Σ
-;; Helper method for dfrd
-(define-metafunction FrTime-Semantics
-  dfrd* : S Σ -> Σ
-  [(dfrd* S (σ ...))
-   (dfrd* S Σ)
-   (where (σ_Ds ...) (Ds S (σ ...)))
-   (where Σ ,(remove-duplicates (term (σ ... σ_Ds ...))))
-   (side-condition (not (equal? (term (σ ...)) (term Σ))))]
-  [(dfrd* S Σ) Σ])
-
-(module+ test
+   (term (dfrd ,Sdfrd ((loc var1) (loc var2))))
+   (term ((loc var0) (loc var2) (loc var3))))  
+  #;
   (test-equal
    (term (dfrd* ,Sdfrd ((loc var1))))
    (term ((loc var1) (loc var0) (loc var2) (loc var3)))))
