@@ -562,6 +562,7 @@
 		,(first
 		  (apply-reduction-relation* ->construction (term (S_* I (u (Vs S σ_1))))))
 		x_new-const))
+	(where Σ_prime (remove-all (dom S_prime) (dom S)))
         (where S_updated-fwd (set-signal-in-store S_prime σ_2 (v (fwd σ_3) Σ_2)))
         (where S_updated-dyn (set-signal-in-store S_updated-fwd σ (⊥ (dyn u σ_1 σ_2) Σ_prime)))
         (where S_1 (reg σ_2 (σ_3) S_updated-dyn))
