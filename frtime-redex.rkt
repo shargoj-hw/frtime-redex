@@ -136,9 +136,12 @@
   [(δ - n ...) ,(apply - (term (n ...)))]
   [(δ * n ...) ,(apply * (term (n ...)))]
   [(δ / n ...) ,(apply / (term (n ...)))]
-  [(δ < n ...) ,(apply < (term (n ...)))]
-  [(δ > n ...) ,(apply > (term (n ...)))]
-  [(δ p v ...) ,(error 'δ "primitive application not supported!")])
+  [(δ < n ...) ,(if (apply < (term (n ...))) (term true) (term false))]
+  [(δ > n ...) ,(if (apply > (term (n ...))) (term true) (term false))]
+  [(δ p v ...) 
+   ,(error "primitive application not supported!" 
+	   (term p)
+	   (term (v ...)))])
 
 (module+ test
   (test-equal (term (δ + 3 4)) (term 7))
