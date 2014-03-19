@@ -418,6 +418,9 @@
     (test-equal (term (externals-at-time ,simple-x 7))
                 i-at-seven)))
 
+;; signalify : (S I e) x -> (S I σ) or #f
+;; Helper for when we run ->construction in ->update. Ensures that the value 
+;; we get get back is a function and that construction can acctually happen.
 (define-metafunction FrTime-Semantics
   signalify : (S I e) x -> (S I σ) or #f
   [(signalify (S I σ) x) (S I σ)]
@@ -426,10 +429,14 @@
    (where S_prime (set-signal-in-store S σ (v const ())))]
   [(signalify (S I e) x) #f])
 
+;; dom : S -> Σ
+;; Returns the domain of S
 (define-metafunction FrTime-Semantics
   dom : S -> Σ
   [(dom ((σ -> sis) ...)) (σ ...)])
 
+;; more-events? : X t -> #t or #f
+;; Are there more external events we need to process?
 (define-metafunction FrTime-Semantics
   more-events? : X t -> #t or #f
   [(more-events? () t) #f]
