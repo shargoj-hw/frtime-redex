@@ -190,8 +190,9 @@
 ;; Get the current value of the given sigma
 (define-metafunction FrTime-Semantics
   Vs : S v -> v
-  [(Vs S v) v_2
-   (where (v_2 s_any Σ_any) (get-signal-in-store S v))])
+  [(Vs S σ) v_2
+   (where (v_2 s_any Σ_any) (get-signal-in-store S σ))]
+  [(Vs S v) v])
 
 (module+ test
   (test-equal (term (Vs ,S1 (loc var0))) 4)
