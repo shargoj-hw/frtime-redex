@@ -596,66 +596,17 @@
         (where I_prime (σ_a ... i_fst ... i_rst ...))
         "u-lift")))
 
-(define signal-in-if
-  (term ((lambda (n) (if (< n (+ n 5)) true false)) (loc seconds))))
-
-(define (make-initial-context t)
-  (term ((((loc seconds) -> (0 input ()))
-	  ((loc key) -> (⊥ input ())))
-	 ()
-	 ,t)))
-
-#;
-(apply-reduction-relation*
- ->construction
- (make-initial-context signal-in-if))
-
-(define if-stmt-term
-  (term (()
-	 (((loc if-dyn) -> (⊥ (dyn (lambda (x) (if x true false)) (loc lifted-prim1) (loc if-fwd)) ()))
-	  ((loc if-fwd) -> (⊥ (fwd (loc ⊥)) ()))
-	  ((loc lifted-prim1) -> (⊥ (lift < (loc seconds) (loc lifted-prim)) ((loc if-dyn))))
-	  ((loc lifted-prim) -> (⊥ (lift + (loc seconds) 5) ((loc lifted-prim1))))
-	  ((loc seconds) -> (0 input ((loc lifted-prim1) (loc lifted-prim))))
-	  ((loc key) -> (⊥ input ())))
-	 ((loc if-dyn) (loc lifted-prim1) (loc lifted-prim))
-	 0)))
-
-(define if-stmt-term-dyn
-  (term (()
-	 (((loc if-dyn) -> (⊥ (dyn (lambda (x) (if x true false)) (loc lifted-prim1) (loc if-fwd)) ()))
-	  ((loc if-fwd) -> (⊥ (fwd (loc ⊥)) ()))
-	  ((loc lifted-prim1) -> (⊥ (lift < (loc seconds) (loc lifted-prim)) ((loc if-dyn))))
-	  ((loc lifted-prim) -> (⊥ (lift + (loc seconds) 5) ((loc lifted-prim1))))
-	  ((loc seconds) -> (0 input ((loc lifted-prim1) (loc lifted-prim))))
-	  ((loc key) -> (⊥ input ())))
-	 ((loc if-dyn))
-	 0)))
-
-(define if-stmt-term-prim1
-  (term (()
-	 (((loc if-dyn) -> (⊥ (dyn (lambda (x) (if x true false)) (loc lifted-prim1) (loc if-fwd)) ()))
-	  ((loc if-fwd) -> (⊥ (fwd (loc ⊥)) ()))
-	  ((loc lifted-prim1) -> (⊥ (lift < (loc seconds) (loc lifted-prim)) ((loc if-dyn))))
-	  ((loc lifted-prim) -> (⊥ (lift + (loc seconds) 5) ((loc lifted-prim1))))
-	  ((loc seconds) -> (0 input ((loc lifted-prim1) (loc lifted-prim))))
-	  ((loc key) -> (⊥ input ())))
-	 ((loc lifted-prim1))
-	 0)))
-
-(define if-stmt-term-prim
-  (term (()
-	 (((loc if-dyn) -> (⊥ (dyn (lambda (x) (if x true false)) (loc lifted-prim1) (loc if-fwd)) ()))
-	  ((loc if-fwd) -> (⊥ (fwd (loc ⊥)) ()))
-	  ((loc lifted-prim1) -> (⊥ (lift < (loc seconds) (loc lifted-prim)) ((loc if-dyn))))
-	  ((loc lifted-prim) -> (⊥ (lift + (loc seconds) 5) ((loc lifted-prim1))))
-	  ((loc seconds) -> (0 input ((loc lifted-prim1) (loc lifted-prim))))
-	  ((loc key) -> (⊥ input ())))
-	 ((loc lifted-prim))
-	 0)))
-
-(apply-reduction-relation
- ->update
- if-stmt-term-prim)
+(module+ test
+  ;; u-shift
+  (test-equal
+   (apply-reduction-relation
+    ->update 
+    (term ((((loc a) false 1)) (((loc a) -> (true const ()))) () 0)))
+   (term  (((((loc a) false 1)) (((loc a) -> (true const ()))) (((loc a) false)) 1))))
+  (test-equal
+   (apply-reduction-relation
+    ->update 
+    (term ((((loc a) false 2)) (((loc a) -> (true const ()))) () 0)))
+   (term  (((((loc a) false 2)) (((loc a) -> (true const ()))) () 1)))))
 
 (module+ test (test-results))
