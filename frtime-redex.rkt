@@ -419,11 +419,12 @@
                 i-at-seven)))
 
 (define-metafunction FrTime-Semantics
-  signalify : (S I v) x -> (S I σ)
+  signalify : (S I e) x -> (S I σ) or #f
   [(signalify (S I σ) x) (S I σ)]
   [(signalify (S I v) x) (S_prime I σ)
    (where σ (loc x))
-   (where S_prime (set-signal-in-store S σ (v const ())))])
+   (where S_prime (set-signal-in-store S σ (v const ())))]
+  [(signalify (S I e) x) #f])
 
 (define-metafunction FrTime-Semantics
   dom : S -> Σ
