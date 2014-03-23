@@ -614,4 +614,50 @@
    (term ((((loc a) false 2)) (((loc a) -> (true const ()))) () 0))
    (term ((((loc a) false 2)) (((loc a) -> (true const ()))) () 1))))
 
+(define signal-in-if
+  (term ((lambda (n) (if (< n (+ n 5)) true false)) (loc seconds))))
+
+(redex-match? FrTime-Semantics S (term ))
+
+(redex-match? 
+ FrTime-Semantics
+ (S I e)
+ (term ((((loc seconds) -> (⊥ input ())))
+        ()
+        ,signal-in-if)))
+
+
+#;
+(apply-reduction-relation*
+ ->construction
+ (term ((((loc seconds) -> (⊥ input ())))
+        ()
+        ,signal-in-if)))
+
+(define a
+  (term  
+   ((((loc seconds) 1 1) ((loc seconds) 2 2) ((loc seconds) 3 3))
+    (((loc if-dyn) ->
+      (⊥ (dyn (lambda (x) (if x true false)) (loc lifted-prim1) (loc if-fwd)) ()))
+     ((loc if-fwd) -> (⊥ (fwd (loc ⊥)) ()))
+     ((loc lifted-prim1) -> (⊥ (lift < (loc seconds) (loc lifted-prim)) ((loc if-dyn))))
+     ((loc lifted-prim) -> (⊥ (lift + (loc seconds) 5) ((loc lifted-prim1))))
+     ((loc seconds) -> (0 input ((loc lifted-prim1) (loc lifted-prim)))))
+    ((loc if-dyn) (loc lifted-prim1) (loc lifted-prim))
+    0)))
+
+(define i
+  (term 
+   (
+    (((loc seconds) -> (0 input ())))
+    ()
+    (if (< (loc seconds) (+ (loc seconds) 5)) true false)
+    )))
+
+(redex-match? FrTime-Semantics (X S I t) a)
+
+(apply-reduction-relation ->update a)
+
+(traces ->update a)
+
 (module+ test (test-results))
