@@ -644,19 +644,36 @@
             ((loc if-fwd) ->  (⊥  (fwd (loc new-const1))  ()))
             ((loc tf) ->  (true input ((loc if-dyn)))))
            ()
-           1))))
-
-(define signal-in-if
-  (term ((lambda (n) (if (< n (+ n 5)) true false)) (loc seconds))))
+           1)))
+  ;; u-lift
+  (test-->
+    ->update
+    (term (()
+           (((loc lifted-prim) ->  (⊥  (lift + (loc seconds) 5)  ()))
+            ((loc seconds) ->  (0 input  ((loc lifted-prim)))))
+           ((loc lifted-prim))
+           0))
+    (term (()
+           (((loc lifted-prim) ->  (5 (lift + (loc seconds) 5)  ()))
+            ((loc seconds) ->  (0 input  ((loc lifted-prim)))))
+           ()
+           0))))
 
 (module+ test (test-results))
 
+;; TODO: cleanup
 (define (SIe->XSIt SIe X)
-  (match-let ([(list (list S I e)) (apply-reduction-relation* ->construction SIe)])
-     (term (,X ,S ,I 0))))
-
-(define t (term (if (loc tf) 1 0)))
-(define tc (term ((((loc tf) -> (false input ()))) () ,t)))
-
-(define u-tc (apply-reduction-relation ->update 
-                                       (SIe->XSIt tc (term (((loc tf) true 1)))))) 
+  (match-let ([(list (list S I e)) 
+               (apply-reduction-relation* ->construction SIe)])
+             (term (,X ,S ,I 0))))
+(define testobj 
+  (apply-reduction-relation* 
+    ->construction 
+    (term ((((loc seconds) ->  (0 input ())))
+           () 
+           (+ (loc seconds) 5)))))
+(define c-to 
+  (term ((((loc lifted-prim) ->  (⊥  (lift + (loc seconds) 5)  ()))
+          ((loc seconds) ->  (0 input  ((loc lifted-prim)))))
+         ((loc lifted-prim))
+         (loc lifted-prim))))
