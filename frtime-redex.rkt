@@ -37,7 +37,6 @@
     (term (+ 3 (loc var0))))
   (define signal-in-if
     (term ((lambda (n) (if (< n (+ n 5)) true false)) (loc seconds))))
-  
 
   (test-equal (redex-match? FrTime e no-signals) #t)
   (test-equal (redex-match? FrTime e lifted-+) #t)
@@ -437,6 +436,12 @@
   dom : S -> Σ
   [(dom ((σ -> sis) ...)) (σ ...)])
 
+(module+ test
+  (let ([example-S (term (((loc var1) -> (⊥ const ((loc var9))))
+                          ((loc var2) -> (4 const ()))
+                          ((loc var3) -> (5 (lift - 6 (loc var2)) ((loc var2))))))])
+    (test-equal (term (dom ,example-S)) (term ((loc var1) (loc var2) (loc var3))))))
+
 ;; more-events? : X t -> #t or #f
 ;; Are there more external events we need to process?
 (define-metafunction FrTime-Semantics
@@ -488,17 +493,11 @@
         (where σ_1 (loc x_beta-dyn))
         (where σ_2 (loc x_beta-fwd))
         (where S_halfprime
-               (set-signal-in-store S
-                                    σ_2
-                                    (⊥ (fwd (loc ⊥)) ())))
+               (set-signal-in-store S σ_2 (⊥ (fwd (loc ⊥)) ())))
         (where S_prime
                (set-signal-in-store S_halfprime
                                     σ_1
-                                    (⊥
-                                     (dyn (lambda (x) (x v ...))
-                                          σ
-                                          σ_2)
-                                     ())))
+                                    (⊥ (dyn (lambda (x) (x v ...)) σ σ_2) ())))
         "beta-v-lift")
    (--> (S I (in-hole E (if true e_1 e_2)))
         ;; reduces to
@@ -677,3 +676,35 @@
           ((loc seconds) ->  (0 input  ((loc lifted-prim)))))
          ((loc lifted-prim))
          (loc lifted-prim))))
+
+
+;; ((λ (n) (if (< 5 (+ n 2)) 33 44)) seconds)
+
+(define signal-in-if1
+  (term ((((loc seconds) -> (⊥ input ()))) 
+           () 
+           ((lambda (n) (if (< 5 (+ n 2)) 33 44)) (loc seconds)))))
+
+(define demo-update
+  (term ( ; X
+         (((loc seconds) 1 1)
+          ((loc seconds) 2 2)
+          ((loc seconds) 3 3)
+          ((loc seconds) 4 4)
+          ((loc seconds) 5 5)
+          ((loc seconds) 6 6))
+          ; S
+         (((loc if-dyn) -> (⊥ (dyn (lambda (x)  (if x 33 44))  
+                                   (loc lifted-prim1)  
+                                   (loc if-fwd))
+                              ()))
+          ((loc if-fwd) ->  (⊥ (fwd (loc ⊥)) ()))
+          ((loc lifted-prim1) -> (⊥ (lift < 5 (loc lifted-prim))  
+                                    ((loc if-dyn))))
+          ((loc lifted-prim) -> (⊥ (lift + (loc seconds) 2)  
+                                    ((loc lifted-prim1))))
+          ((loc seconds) -> (0 input ((loc lifted-prim)))))
+           ; I
+         ((loc if-dyn) (loc lifted-prim1) (loc lifted-prim))
+           ; t
+         0)))
