@@ -2,7 +2,6 @@
 
 (define-language FrTime
   ;; Store locations
-  ;; TODO: is this right?
   (σ (loc x) (loc ⊥))
 
   ;; Variables
@@ -166,7 +165,7 @@
   (test-equal (term (get-signal-in-store ,S1 (loc var99)))
               (term #f)))
 
-;; get-signal-in-store : S v sis -> S
+;; set-signal-in-store : S v sis -> S
 ;; Updates or adds the signal v in the given store with the given
 ;; value, returning the updated store
 (define-metafunction FrTime-Semantics
@@ -190,8 +189,7 @@
 ;; Get the current value of the given sigma
 (define-metafunction FrTime-Semantics
   Vs : S v -> v
-  [(Vs S σ) v_2
-   (where (v_2 s_any Σ_any) (get-signal-in-store S σ))]
+  [(Vs S σ) v_2 (where (v_2 s_any Σ_any) (get-signal-in-store S σ))]
   [(Vs S v) v])
 
 (module+ test
@@ -241,7 +239,8 @@
   [(Ds* S () Σ) ,(remove-duplicates (term Σ))]
   [(Ds* S (σ_first σ_rest ...) (σ_acc ...))
    (Ds* S (σ_rest ...) (σ_first-in-store ... σ_acc ...))
-   (where (v_any s_any (σ_first-in-store ...)) (get-signal-in-store S σ_first))]
+   (where (v_any s_any (σ_first-in-store ...)) 
+          (get-signal-in-store S σ_first))]
   [(Ds* S (σ_first σ_rest ...) Σ) (Ds* S (σ_rest ...) Σ)])
 
 ;; dfrd : S I -> Σ
@@ -401,7 +400,9 @@
 (define-metafunction FrTime-Semantics
   externals-at-time* : X n I -> I
   [(externals-at-time* () n_time I) I]
-  [(externals-at-time* ((σ_1 v_1 n_time) (σ_rest v_rest n_rest) ...) n_time (i ...))
+  [(externals-at-time* ((σ_1 v_1 n_time) (σ_rest v_rest n_rest) ...) 
+                       n_time 
+                       (i ...))
    (externals-at-time* ((σ_rest v_rest n_rest) ...) n_time ((σ_1 v_1) i ...))]
   [(externals-at-time* ((σ_1 v_1 n_1) (σ_rest v_rest n_rest) ...) n_time I)
    (externals-at-time* ((σ_rest v_rest n_rest) ...) n_time I)])
@@ -660,7 +661,6 @@
 
 (module+ test (test-results))
 
-;; TODO: cleanup
 (define (SIe->XSIt SIe X)
   (match-let ([(list (list S I e)) 
                (apply-reduction-relation* ->construction SIe)])
