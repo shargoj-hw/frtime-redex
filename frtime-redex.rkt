@@ -90,21 +90,30 @@
    (subst-vars x_1 any_1 (subst-vars ((x_2 any_2) ... any_3)))])
 
 (define-extended-language FrTime-Semantics FrTime
+  ;; Σ is a list of signal locations
   (Σ ::=
      (σ ...))
+  ;; I is a list of internal events
   (I ::=
      (i ...))
+  ;; These events are either locations or (loc val) pairs
   (i ::=
      σ
      (σ v))
+  ;; X is a set of external events
   (X ::=
      (xs ...))
+  ;; External events are a (loc val number) tuple
   (xs ::=
       (σ v n))
+  ;; S is our signal store in memory, map from vals (in this case, signals)
+  ;; to a tuple named 'sis'
   (S ::=
      ((v -> sis) ...))
+  ;; sis = signal in store, tuple of (val signal (dependent signals...))
   (sis ::=
        (v s (σ ...)))
+  ;; global time is a number
   (t ::=
      n))
 
@@ -676,7 +685,6 @@
           ((loc seconds) ->  (0 input  ((loc lifted-prim)))))
          ((loc lifted-prim))
          (loc lifted-prim))))
-
 
 ;; ((λ (n) (if (< 5 (+ n 2)) 33 44)) seconds)
 
